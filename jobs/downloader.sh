@@ -19,8 +19,8 @@
 WORK_ROOT="/work2/ra39oxet-DatasetAudioSetSubset"
 mkdir -p "$WORK_ROOT/logs"
 
-# Repo-Root = übergeordnetes Verzeichnis von jobs/
-REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# Repo-Root: Verzeichnis, aus dem sbatch aufgerufen wurde (Fallback: übergeordnetes Verzeichnis von jobs/)
+REPO_ROOT="${SLURM_SUBMIT_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
 cd "$REPO_ROOT" || { echo "FEHLER: cd nach $REPO_ROOT fehlgeschlagen." >&2; exit 1; }
 
 module purge
