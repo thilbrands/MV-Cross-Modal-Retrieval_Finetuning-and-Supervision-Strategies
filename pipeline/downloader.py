@@ -23,8 +23,8 @@ WORK_ROOT = Path("/work2/ra39oxet-DatasetAudioSetSubset")
 # Repo-Root (für git-Commit-Hash)
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
-# Daten (Input) – bestehender audioset-Ordner unterhalb des Roots
-DATA_DIR = WORK_ROOT / "audioset"
+# Daten (Input) – bestehender AudioSetData-Ordner unterhalb des Roots
+DATA_DIR = WORK_ROOT / "AudioSetData"
 DATA_CSV = DATA_DIR / "unbalanced_train_segments-2.csv"
 ONTOLOGY_JSON = DATA_DIR / "ontology.json"
 
