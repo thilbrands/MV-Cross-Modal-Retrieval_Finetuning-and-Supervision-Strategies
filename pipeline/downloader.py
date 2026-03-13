@@ -70,12 +70,19 @@ def get_git_commit() -> str:
         return "UNKNOWN"
 
 
-def write_run_config(run_name: str, start_time: str, end_time: str, git_commit: str) -> None:
+def write_run_config(
+    run_name: str,
+    start_time: str,
+    git_commit: str,
+    status: str,
+    end_time: str | None = None,
+) -> None:
     cfg = {
         "run_name": run_name,
         "start_time": start_time,
-        "end_time": end_time,
         "git_commit": git_commit,
+        "status": status,
+        "end_time": end_time,
     }
     with open(CONFIG_PATH, "w", encoding="utf-8") as f:
         json.dump(cfg, f, ensure_ascii=False, indent=2)
@@ -387,6 +394,15 @@ def main() -> None:
     start_time = datetime.now().isoformat(timespec="seconds")
     git_commit = get_git_commit()
 
+    # Config direkt am Anfang mit Status "running" schreiben
+    write_run_config(
+        run_name=RUN_NAME,
+        start_time=start_time,
+        git_commit=git_commit,
+        status="running",
+        end_time=None,
+    )
+
     log("=" * 60)
     log("AudioSet-Cluster-Run gestartet (downloader)")
     log("=" * 60)
@@ -459,7 +475,14 @@ def main() -> None:
     log("=" * 60)
 
     end_time = datetime.now().isoformat(timespec="seconds")
-    write_run_config(RUN_NAME, start_time, end_time, git_commit)
+    # Config am Ende mit Status "finished" und Endzeit überschreiben
+    write_run_config(
+        run_name=RUN_NAME,
+        start_time=start_time,
+        git_commit=git_commit,
+        status="finished",
+        end_time=end_time,
+    )
 
 
 if __name__ == "__main__":
