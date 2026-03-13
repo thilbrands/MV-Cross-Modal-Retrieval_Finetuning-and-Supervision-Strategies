@@ -75,6 +75,7 @@ def write_run_config(
     start_time: str,
     git_commit: str,
     status: str,
+    job_id: str | None,
     end_time: str | None = None,
 ) -> None:
     cfg = {
@@ -82,6 +83,7 @@ def write_run_config(
         "start_time": start_time,
         "git_commit": git_commit,
         "status": status,
+        "job_id": job_id,
         "end_time": end_time,
     }
     with open(CONFIG_PATH, "w", encoding="utf-8") as f:
@@ -393,6 +395,7 @@ def build_cleaned_balanced_csv(
 def main() -> None:
     start_time = datetime.now().isoformat(timespec="seconds")
     git_commit = get_git_commit()
+    job_id = os.environ.get("SLURM_JOB_ID")
 
     # Config direkt am Anfang mit Status "running" schreiben
     write_run_config(
@@ -400,6 +403,7 @@ def main() -> None:
         start_time=start_time,
         git_commit=git_commit,
         status="running",
+        job_id=job_id,
         end_time=None,
     )
 
@@ -481,6 +485,7 @@ def main() -> None:
         start_time=start_time,
         git_commit=git_commit,
         status="finished",
+        job_id=job_id,
         end_time=end_time,
     )
 
