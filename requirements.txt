@@ -15,5 +15,5 @@ torch>=2.0
 torchvision>=0.15
 Pillow>=9.0
 wav2clip>=0.1
-# CLIP (OpenAI), für import clip und clip.load("ViT-B/32"):
-git+https://github.com/openai/CLIP.git
+# CLIP: gleiche API wie OpenAI (import clip, clip.load("ViT-B/32")), ohne Git
+clip-anytorch>=2.0

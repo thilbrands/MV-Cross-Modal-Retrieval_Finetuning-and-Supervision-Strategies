@@ -5,10 +5,7 @@ Pipeline: from models import load_models, ProjectionHead, load_projection_heads
 import torch
 import torch.nn as nn
 
-from config import DEVICE as _CONFIG_DEVICE, PROJECTION_HEADS_PATH
-
-# Wie old: DEVICE aus config, Fallback auf CPU wenn CUDA nicht verfügbar
-DEVICE = _CONFIG_DEVICE if (_CONFIG_DEVICE == "cuda" and torch.cuda.is_available()) else "cpu"
+from config import DEVICE, PROJECTION_HEADS_PATH
 
 
 def load_models(device=None):

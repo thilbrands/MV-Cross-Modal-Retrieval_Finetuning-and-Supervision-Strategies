@@ -18,8 +18,14 @@ DATA_DIR = WORK_ROOT / "AudioSetData"
 DATA_CSV = DATA_DIR / "unbalanced_train_segments-2.csv"
 ONTOLOGY_JSON = DATA_DIR / "ontology.json"
 
-# Device für PyTorch (CLIP, Wav2CLIP). Scripts nutzen "cpu", wenn CUDA nicht verfügbar.
-DEVICE = "cuda"
+# Device für PyTorch (CLIP, Wav2CLIP): hier zentral festgelegt, überall importierbar.
+# Bevorzugung: "cuda" wenn verfügbar, sonst "cpu". Bei fehlendem torch: "cpu".
+DEVICE_PREFER = "cuda"
+try:
+    import torch
+    DEVICE = "cuda" if (DEVICE_PREFER == "cuda" and torch.cuda.is_available()) else "cpu"
+except ImportError:
+    DEVICE = "cpu"
 
 # Projektions-Heads (Training), z. B. pro Run oder zentral
 PROJECTION_HEADS_PATH = WORK_ROOT / "projection_heads.pt"

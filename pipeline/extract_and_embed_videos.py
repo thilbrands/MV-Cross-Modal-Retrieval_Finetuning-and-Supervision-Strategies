@@ -236,6 +236,9 @@ def main() -> None:
     video_dir.mkdir(parents=True, exist_ok=True)
     audio_dir.mkdir(parents=True, exist_ok=True)
 
+    log("Lade CLIP und Wav2CLIP (models.load_models) …")
+    clip_model, clip_preprocess, wav2clip_model, device = load_models()
+
     log("=" * 60)
     log("Extraktion + Embedding (CLIP / Wav2CLIP) – ohne Frames/Audio auf Disk")
     log("=" * 60)
@@ -244,9 +247,6 @@ def main() -> None:
     log(f"DEVICE: {device}")
     log(f"Embeddings → {embeddings_dir}")
     log(f"CSV (balanced): {balanced_csv}")
-
-    log("Lade CLIP und Wav2CLIP (models.load_models) …")
-    clip_model, clip_preprocess, wav2clip_model, device = load_models()
 
     video_list = build_video_list(balanced_csv, downloads_dir)
     log(f"Videos zu verarbeiten: {len(video_list)}")
