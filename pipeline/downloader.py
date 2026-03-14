@@ -9,6 +9,11 @@ from pathlib import Path
 from typing import Tuple, List, Dict
 from datetime import datetime
 
+# Repo-Root für Imports (config liegt im Repo-Root)
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+import config
 
 """
 AudioSet-Download für den Cluster (1:1-Logik aus dem ursprünglichen Notebook).
@@ -17,19 +22,11 @@ AudioSet-Download für den Cluster (1:1-Logik aus dem ursprünglichen Notebook).
 - Ausführung: sbatch jobs/downloader.sh
 """
 
-# Fester Root-Ordner auf work2 (nicht verhandelbar)
-WORK_ROOT = Path("/work2/ra39oxet-DatasetAudioSetSubset")
-
-# Repo-Root (für git-Commit-Hash)
-REPO_ROOT = Path(__file__).resolve().parents[1]
-
-# Daten (Input) – bestehender AudioSetData-Ordner unterhalb des Roots
-DATA_DIR = WORK_ROOT / "AudioSetData"
-DATA_CSV = DATA_DIR / "unbalanced_train_segments-2.csv"
-ONTOLOGY_JSON = DATA_DIR / "ontology.json"
-
-# Datasets-Root: hier liegen alle Runs (pro Run ein Datums-Ordner)
-DATASETS_ROOT = WORK_ROOT / "datasets"
+WORK_ROOT = config.WORK_ROOT
+DATA_DIR = config.DATA_DIR
+DATA_CSV = config.DATA_CSV
+ONTOLOGY_JSON = config.ONTOLOGY_JSON
+DATASETS_ROOT = config.DATASETS_ROOT
 
 # Run-Name: Datum_Uhrzeit + Task-Name, z.B. 2026-03-13_14-52-10_audioset
 _timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
