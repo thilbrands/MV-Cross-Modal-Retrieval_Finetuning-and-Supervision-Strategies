@@ -27,6 +27,12 @@ TRAIN_VAL_TEST_SPLIT_CSV = run_dir / "train_val_test_split.csv"
 PROJECTION_HEADS_PATH = config.PROJECTION_HEADS_PATH
 DEVICE = config.DEVICE
 
+
+def log(msg: str) -> None:
+    """Fortschritt in stderr (erscheint in Slurm .err), sofort sichtbar."""
+    print(msg, file=sys.stderr, flush=True)
+
+
 train_ds = PairDataset("train", TRAIN_VAL_TEST_SPLIT_CSV, EMBEDDINGS_DIR)
 val_ds = PairDataset("val", TRAIN_VAL_TEST_SPLIT_CSV, EMBEDDINGS_DIR)
 train_loader = DataLoader(train_ds, batch_size=32, shuffle=True, num_workers=0)
@@ -36,6 +42,11 @@ video_head = ProjectionHead().to(DEVICE)
 audio_head = ProjectionHead().to(DEVICE)
 opt = torch.optim.Adam(list(video_head.parameters()) + list(audio_head.parameters()), lr=1e-3)
 
+num_epochs = 20
+best_val = float("inf")
+log(f"Run: {run_name} | Train: {len(train_ds)} | Val: {len(val_ds)} | Epochs: {num_epochs} | Device: {DEVICE}")
+log(f"Speichern unter: {PROJECTION_HEADS_PATH}")
+
 
 def infonce_loss(v_proj, a_proj, temp=0.07):
     """Logits = v_proj @ a_proj.T / temp; Labels = Diagonale (positives Paar)."""
@@ -43,11 +54,8 @@ def infonce_loss(v_proj, a_proj, temp=0.07):
     labels = torch.arange(v_proj.size(0), device=v_proj.device)
     return nn.functional.cross_entropy(logits, labels)
 
-
-num_epochs = 20
-best_val = float("inf")
-
 for epoch in range(num_epochs):
+    log(f"Epoch {epoch+1}/{num_epochs} …")
     video_head.train()
     audio_head.train()
     train_loss = 0.0
@@ -77,6 +85,6 @@ for epoch in range(num_epochs):
             {"video_head": video_head.state_dict(), "audio_head": audio_head.state_dict()},
             PROJECTION_HEADS_PATH,
         )
-    print(f"Epoch {epoch+1}  train={train_loss:.4f}  val={val_loss:.4f}  best_val={best_val:.4f}")
+    log(f"Epoch {epoch+1}/{num_epochs}  train={train_loss:.4f}  val={val_loss:.4f}  best_val={best_val:.4f}")
 
-print(f"Gespeichert: {PROJECTION_HEADS_PATH}")
+log(f"Gespeichert: {PROJECTION_HEADS_PATH}")
