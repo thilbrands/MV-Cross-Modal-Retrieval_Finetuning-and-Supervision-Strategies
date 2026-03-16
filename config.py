@@ -29,6 +29,8 @@ except ImportError:
 
 # Projektions-Heads (Training), z. B. pro Run oder zentral
 PROJECTION_HEADS_PATH = WORK_ROOT / "projection_heads.pt"
+# Zweite Variante: Genre-basiertes Training (SupCon über Labels)
+PROJECTION_HEADS_GENRE_PATH = WORK_ROOT / "projection_heads_genre.pt"
 
 
 def get_latest_run_name() -> str | None:

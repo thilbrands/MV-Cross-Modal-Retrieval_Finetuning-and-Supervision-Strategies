@@ -13,7 +13,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_REPO_ROOT))
 import config
 from dataset import PairDataset
-from models import load_projection_heads
+from models import load_projection_heads, load_projection_heads_genre
 from metrics import MRR, recall_at_k, mean_rank, labels_from_split_csv
 
 # Run: aus Umgebung oder neuester
@@ -29,7 +29,8 @@ DEVICE = config.DEVICE
 
 test_ds = PairDataset("test", TRAIN_VAL_TEST_SPLIT_CSV, EMBEDDINGS_DIR)
 test_loader = DataLoader(test_ds, batch_size=32, shuffle=False, num_workers=0)
-video_head, audio_head = load_projection_heads()
+video_head_pair, audio_head_pair = load_projection_heads()
+video_head_genre, audio_head_genre = load_projection_heads_genre()
 
 # Relevanz = Genre-Tag (Spalte "label"), gleiche Reihenfolge wie test_ds
 labels = labels_from_split_csv(
@@ -48,12 +49,16 @@ A = torch.cat(A_list, dim=0).to(DEVICE)
 # Ähnlichkeitsmatrix: sim[i,j] = Video i vs Audio j
 sim_baseline = (V @ A.T).cpu()
 with torch.no_grad():
-    v_proj = video_head(V)
-    a_proj = audio_head(A)
-sim_trained = (v_proj @ a_proj.T).cpu()
+    v_pair = video_head_pair(V)
+    a_pair = audio_head_pair(A)
+    v_genre = video_head_genre(V)
+    a_genre = audio_head_genre(A)
+sim_pair = (v_pair @ a_pair.T).cpu()
+sim_genre = (v_genre @ a_genre.T).cpu()
 
 print("sim_baseline shape:", sim_baseline.shape)
-print("sim_trained shape:", sim_trained.shape)
+print("sim_pair shape:", sim_pair.shape)
+print("sim_genre shape:", sim_genre.shape)
 
 
 def print_metrics(name, sim, labels):
@@ -65,8 +70,10 @@ def print_metrics(name, sim, labels):
 
 print("=== V→A (Video als Query, Audio retrieval) ===")
 print_metrics("Baseline", sim_baseline, labels)
-print_metrics("Mit Heads", sim_trained, labels)
+print_metrics("Pair-based", sim_pair, labels)
+print_metrics("Genre-based", sim_genre, labels)
 print()
 print("=== A→V (Audio als Query, Video retrieval) ===")
 print_metrics("Baseline", sim_baseline.T, labels)
-print_metrics("Mit Heads", sim_trained.T, labels)
+print_metrics("Pair-based", sim_pair.T, labels)
+print_metrics("Genre-based", sim_genre.T, labels)

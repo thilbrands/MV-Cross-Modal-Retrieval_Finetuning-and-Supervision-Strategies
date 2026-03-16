@@ -5,7 +5,7 @@ Pipeline: from models import load_models, ProjectionHead, load_projection_heads
 import torch
 import torch.nn as nn
 
-from config import DEVICE, PROJECTION_HEADS_PATH
+from config import DEVICE, PROJECTION_HEADS_PATH, PROJECTION_HEADS_GENRE_PATH
 
 
 def load_models(device=None):
@@ -42,6 +42,18 @@ def load_projection_heads(device=None):
     video_head = ProjectionHead().to(DEVICE)
     audio_head = ProjectionHead().to(DEVICE)
     ckpt = torch.load(PROJECTION_HEADS_PATH, map_location=DEVICE)
+    video_head.load_state_dict(ckpt["video_head"])
+    audio_head.load_state_dict(ckpt["audio_head"])
+    video_head.eval()
+    audio_head.eval()
+    return video_head, audio_head
+
+
+def load_projection_heads_genre(device=None):
+    """Lädt die genre-basiert trainierten Projektions-Heads. Gibt (video_head, audio_head) zurück."""
+    video_head = ProjectionHead().to(DEVICE)
+    audio_head = ProjectionHead().to(DEVICE)
+    ckpt = torch.load(PROJECTION_HEADS_GENRE_PATH, map_location=DEVICE)
     video_head.load_state_dict(ckpt["video_head"])
     audio_head.load_state_dict(ckpt["audio_head"])
     video_head.eval()
