@@ -1,9 +1,11 @@
 """
 Genre-basiertes Training (Projektions-Heads + Supervised Contrastive über Labels).
-Run: DATASET_RUN_NAME oder neuester Run. Heads werden unter PROJECTION_HEADS_GENRE_PATH gespeichert.
+Run: DATASET_RUN_NAME oder neuester Run. Speichert in training_runs/<Datum_Uhrzeit>/.
 """
+import json
 import os
 import sys
+from datetime import datetime
 from pathlib import Path
 
 import torch
@@ -20,16 +22,20 @@ run_name = os.environ.get("DATASET_RUN_NAME") or config.get_latest_run_name()
 if not run_name:
     print("FEHLER: DATASET_RUN_NAME nicht gesetzt und kein Run unter DATASETS_ROOT.", flush=True)
     sys.exit(1)
-run_dir = config.DATASETS_ROOT / run_name
-EMBEDDINGS_DIR = run_dir / "embeddings"
-TRAIN_VAL_TEST_SPLIT_CSV = run_dir / "train_val_test_split.csv"
-PROJECTION_HEADS_GENRE_PATH = config.PROJECTION_HEADS_GENRE_PATH
+dataset_dir = config.DATASETS_ROOT / run_name
+EMBEDDINGS_DIR = dataset_dir / "embeddings"
+TRAIN_VAL_TEST_SPLIT_CSV = dataset_dir / "train_val_test_split.csv"
 DEVICE = config.DEVICE
 
+# Neuer Training-Run-Ordner (Datum_Uhrzeit)
+training_run_dir = config.get_new_training_run_dir()
+CHECKPOINT_PATH = training_run_dir / "projection_heads_genre.pt"
 
-def log(msg: str) -> None:
-    """Fortschritt in stderr (erscheint in Slurm .err), sofort sichtbar."""
-    print(msg, file=sys.stderr, flush=True)
+
+def progress_stderr(epoch_done: int, total: int) -> None:
+    """Nur Fortschritt in Prozent nach .err (für tail -f)."""
+    pct = int((epoch_done / total) * 100)
+    print(f"{pct:3d}%", file=sys.stderr, flush=True)
 
 
 train_ds = PairDataset("train", TRAIN_VAL_TEST_SPLIT_CSV, EMBEDDINGS_DIR, return_label=True)
@@ -43,10 +49,12 @@ opt = torch.optim.Adam(list(video_head.parameters()) + list(audio_head.parameter
 
 num_epochs = 20
 best_val = float("inf")
-log(
-    f"Run: {run_name} | Train: {len(train_ds)} | Val: {len(val_ds)} | Epochs: {num_epochs} | Device: {DEVICE}"
+print(
+    f"Dataset-Run: {run_name} | Train: {len(train_ds)} | Val: {len(val_ds)} | Epochs: {num_epochs} | Device: {DEVICE}",
+    flush=True,
 )
-log(f"Speichern unter: {PROJECTION_HEADS_GENRE_PATH}")
+print(f"Training-Run: {training_run_dir}", flush=True)
+progress_stderr(0, num_epochs)
 
 
 def genre_supcon_loss(v_proj, a_proj, labels, temp: float = 0.07):
@@ -84,7 +92,6 @@ def genre_supcon_loss(v_proj, a_proj, labels, temp: float = 0.07):
 
 
 for epoch in range(num_epochs):
-    log(f"Epoch {epoch+1}/{num_epochs} …")
     video_head.train()
     audio_head.train()
     train_loss = 0.0
@@ -112,9 +119,25 @@ for epoch in range(num_epochs):
         best_val = val_loss
         torch.save(
             {"video_head": video_head.state_dict(), "audio_head": audio_head.state_dict()},
-            PROJECTION_HEADS_GENRE_PATH,
+            CHECKPOINT_PATH,
         )
-    log(f"Epoch {epoch+1}/{num_epochs}  train={train_loss:.4f}  val={val_loss:.4f}  best_val={best_val:.4f}")
+    print(
+        f"Epoch {epoch+1}/{num_epochs}  train={train_loss:.4f}  val={val_loss:.4f}  best_val={best_val:.4f}",
+        flush=True,
+    )
+    progress_stderr(epoch + 1, num_epochs)
 
-log(f"Gespeichert: {PROJECTION_HEADS_GENRE_PATH}")
+# Metadaten für Nachvollziehbarkeit
+meta = {
+    "timestamp": datetime.now().isoformat(),
+    "dataset_run": run_name,
+    "git_commit": config.get_git_commit(),
+    "git_dirty": config.get_git_dirty(),
+    "training_type": "genre",
+    "hyperparams": {"epochs": num_epochs, "lr": 1e-3, "batch_size": 32, "temp": 0.07},
+}
+with open(training_run_dir / "meta.json", "w", encoding="utf-8") as f:
+    json.dump(meta, f, indent=2)
+
+print(f"Gespeichert: {CHECKPOINT_PATH}", flush=True)
 

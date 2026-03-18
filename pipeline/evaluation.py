@@ -1,9 +1,11 @@
 """
-Evaluation: MRR, Recall@1/5/10, Mean Rank. V→A und A→V. Logik 1:1 aus old/09_evaluation.ipynb.
-Run: DATASET_RUN_NAME oder neuester Run. Projektions-Heads aus PROJECTION_HEADS_PATH.
+Evaluation: MRR, Recall@1/5/10, Mean Rank. V→A und A→V.
+Lädt neueste Heads aus training_runs/<Datum_Uhrzeit>/; oben: Datum, Git-Commit, verwendete Heads.
 """
+import json
 import os
 import sys
+from datetime import datetime
 from pathlib import Path
 
 import torch
@@ -24,13 +26,34 @@ if not run_name:
 run_dir = config.DATASETS_ROOT / run_name
 EMBEDDINGS_DIR = run_dir / "embeddings"
 TRAIN_VAL_TEST_SPLIT_CSV = run_dir / "train_val_test_split.csv"
-PROJECTION_HEADS_PATH = config.PROJECTION_HEADS_PATH
 DEVICE = config.DEVICE
+
+# Neueste Training-Runs für Pair und Genre (oder Fallback auf Config-Pfade)
+pair_run_dir = config.get_latest_training_run_with("projection_heads_pair.pt")
+genre_run_dir = config.get_latest_training_run_with("projection_heads_genre.pt")
+pair_path = pair_run_dir if pair_run_dir else None
+genre_path = genre_run_dir if genre_run_dir else None
+
+def _meta_commit(run_dir: Path | None) -> str:
+    if run_dir is None:
+        return ""
+    try:
+        with open(run_dir / "meta.json", encoding="utf-8") as f:
+            m = json.load(f)
+        return m.get("git_commit", "") or ""
+    except Exception:
+        return ""
+
+print(f"Datum: {datetime.now().strftime('%Y-%m-%d %H:%M')}", flush=True)
+print(f"Git-Commit (Eval): {config.get_git_commit()}{' (dirty)' if config.get_git_dirty() else ''}", flush=True)
+print(f"Dataset-Run: {run_name}", flush=True)
+print(f"Pair-based Head: {pair_path or config.PROJECTION_HEADS_PATH} (train commit: {_meta_commit(pair_run_dir) or '-'})", flush=True)
+print(f"Genre-based Head: {genre_path or config.PROJECTION_HEADS_GENRE_PATH} (train commit: {_meta_commit(genre_run_dir) or '-'})", flush=True)
 
 test_ds = PairDataset("test", TRAIN_VAL_TEST_SPLIT_CSV, EMBEDDINGS_DIR)
 test_loader = DataLoader(test_ds, batch_size=32, shuffle=False, num_workers=0)
-video_head_pair, audio_head_pair = load_projection_heads()
-video_head_genre, audio_head_genre = load_projection_heads_genre()
+video_head_pair, audio_head_pair = load_projection_heads(pair_path)
+video_head_genre, audio_head_genre = load_projection_heads_genre(genre_path)
 
 # Relevanz = Genre-Tag (Spalte "label"), gleiche Reihenfolge wie test_ds
 labels = labels_from_split_csv(

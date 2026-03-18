@@ -2,6 +2,8 @@
 Modell-Definitionen und Lade-Funktionen (1:1 aus old/models.py).
 Pipeline: from models import load_models, ProjectionHead, load_projection_heads
 """
+from pathlib import Path
+
 import torch
 import torch.nn as nn
 
@@ -37,11 +39,22 @@ class ProjectionHead(nn.Module):
         return self.mlp(x)
 
 
-def load_projection_heads(device=None):
-    """Lädt die trainierten Projektions-Heads aus PROJECTION_HEADS_PATH. Gibt (video_head, audio_head) zurück."""
+def _checkpoint_path(path, default_path, filename_in_dir):
+    """path=None → default_path; path=Ordner → path/filename_in_dir; sonst path als Datei."""
+    if path is None:
+        return default_path
+    p = Path(path)
+    if p.is_dir():
+        return p / filename_in_dir
+    return p
+
+
+def load_projection_heads(path=None, device=None):
+    """Lädt Pair-Heads aus path (Ordner/Datei) oder PROJECTION_HEADS_PATH. Gibt (video_head, audio_head) zurück."""
+    ckpt_path = _checkpoint_path(path, PROJECTION_HEADS_PATH, "projection_heads_pair.pt")
     video_head = ProjectionHead().to(DEVICE)
     audio_head = ProjectionHead().to(DEVICE)
-    ckpt = torch.load(PROJECTION_HEADS_PATH, map_location=DEVICE)
+    ckpt = torch.load(ckpt_path, map_location=DEVICE)
     video_head.load_state_dict(ckpt["video_head"])
     audio_head.load_state_dict(ckpt["audio_head"])
     video_head.eval()
@@ -49,11 +62,12 @@ def load_projection_heads(device=None):
     return video_head, audio_head
 
 
-def load_projection_heads_genre(device=None):
-    """Lädt die genre-basiert trainierten Projektions-Heads. Gibt (video_head, audio_head) zurück."""
+def load_projection_heads_genre(path=None, device=None):
+    """Lädt Genre-Heads aus path (Ordner/Datei) oder PROJECTION_HEADS_GENRE_PATH. Gibt (video_head, audio_head) zurück."""
+    ckpt_path = _checkpoint_path(path, PROJECTION_HEADS_GENRE_PATH, "projection_heads_genre.pt")
     video_head = ProjectionHead().to(DEVICE)
     audio_head = ProjectionHead().to(DEVICE)
-    ckpt = torch.load(PROJECTION_HEADS_GENRE_PATH, map_location=DEVICE)
+    ckpt = torch.load(ckpt_path, map_location=DEVICE)
     video_head.load_state_dict(ckpt["video_head"])
     audio_head.load_state_dict(ckpt["audio_head"])
     video_head.eval()
