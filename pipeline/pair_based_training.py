@@ -45,8 +45,8 @@ def progress_stderr(epoch_done: int, total: int) -> None:
 
 train_ds = PairDataset("train", TRAIN_VAL_TEST_SPLIT_CSV, EMBEDDINGS_DIR)
 val_ds = PairDataset("val", TRAIN_VAL_TEST_SPLIT_CSV, EMBEDDINGS_DIR)
-train_loader = DataLoader(train_ds, batch_size=32, shuffle=True, num_workers=0)
-val_loader = DataLoader(val_ds, batch_size=32, shuffle=False, num_workers=0)
+train_loader = DataLoader(train_ds, batch_size=64, shuffle=True, num_workers=0)
+val_loader = DataLoader(val_ds, batch_size=64, shuffle=False, num_workers=0)
 
 video_head = ProjectionHead().to(DEVICE)
 audio_head = ProjectionHead().to(DEVICE)
