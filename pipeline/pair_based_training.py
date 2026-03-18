@@ -52,7 +52,7 @@ video_head = ProjectionHead().to(DEVICE)
 audio_head = ProjectionHead().to(DEVICE)
 opt = torch.optim.Adam(list(video_head.parameters()) + list(audio_head.parameters()), lr=1e-3)
 
-num_epochs = 20
+num_epochs = 5
 best_val = float("inf")
 print(f"Dataset-Run: {run_name} | Train: {len(train_ds)} | Val: {len(val_ds)} | Epochs: {num_epochs} | Device: {DEVICE}", flush=True)
 print(f"Training-Run: {training_run_dir}", flush=True)
