@@ -53,10 +53,7 @@ opt = torch.optim.Adam(list(video_head.parameters()) + list(audio_head.parameter
 
 num_epochs = 20
 best_val = float("inf")
-print(
-    f"Dataset-Run: {run_name} | Train: {len(train_ds)} | Val: {len(val_ds)} | Epochs: {num_epochs} | Device: {DEVICE}",
-    flush=True,
-)
+print(f"Dataset-Run: {run_name} | Train: {len(train_ds)} | Val: {len(val_ds)} | Epochs: {num_epochs} | Device: {DEVICE}", flush=True)
 print(f"Training-Run: {training_run_dir}", flush=True)
 progress_stderr(0, num_epochs)
 
@@ -125,10 +122,7 @@ for epoch in range(num_epochs):
             {"video_head": video_head.state_dict(), "audio_head": audio_head.state_dict()},
             CHECKPOINT_PATH,
         )
-    print(
-        f"Epoch {epoch+1}/{num_epochs}  train={train_loss:.4f}  val={val_loss:.4f}  best_val={best_val:.4f}",
-        flush=True,
-    )
+    print(f"Epoch {epoch+1}/{num_epochs}  train={train_loss:.4f}  val={val_loss:.4f}  best_val={best_val:.4f}", flush=True)
     progress_stderr(epoch + 1, num_epochs)
 
 # Metadaten für Nachvollziehbarkeit

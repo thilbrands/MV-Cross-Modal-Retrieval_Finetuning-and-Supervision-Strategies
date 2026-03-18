@@ -30,7 +30,9 @@ echo "Training-Run (alle Ausgaben): $TRAINING_RUN_DIR"
 echo ""
 
 echo "========== 1/3 Pair-basiertes Training =========="
-JOB1=$(sbatch --parsable --export=DATASET_RUN_NAME,TRAINING_RUN_DIR jobs/pair_based_training.sh)
+JOB1=$(sbatch --parsable --export=DATASET_RUN_NAME,TRAINING_RUN_DIR \
+  --output="$TRAINING_RUN_DIR/training_pair.out" --error="$TRAINING_RUN_DIR/training_pair.err" \
+  jobs/pair_based_training.sh)
 echo "Job gestartet: $JOB1"
 echo "Warte auf Abschluss …"
 while squeue -j "$JOB1" 2>/dev/null | grep -q "$JOB1"; do sleep 60; done
@@ -38,7 +40,9 @@ echo "Pair-Training beendet."
 
 echo ""
 echo "========== 2/3 Genre-basiertes Training =========="
-JOB2=$(sbatch --parsable --export=DATASET_RUN_NAME,TRAINING_RUN_DIR jobs/genre_based_training.sh)
+JOB2=$(sbatch --parsable --export=DATASET_RUN_NAME,TRAINING_RUN_DIR \
+  --output="$TRAINING_RUN_DIR/training_genre.out" --error="$TRAINING_RUN_DIR/training_genre.err" \
+  jobs/genre_based_training.sh)
 echo "Job gestartet: $JOB2"
 echo "Warte auf Abschluss …"
 while squeue -j "$JOB2" 2>/dev/null | grep -q "$JOB2"; do sleep 60; done
@@ -46,7 +50,9 @@ echo "Genre-Training beendet."
 
 echo ""
 echo "========== 3/3 Evaluation =========="
-JOB3=$(sbatch --parsable --export=DATASET_RUN_NAME,TRAINING_RUN_DIR jobs/evaluation.sh)
+JOB3=$(sbatch --parsable --export=DATASET_RUN_NAME,TRAINING_RUN_DIR \
+  --output="$TRAINING_RUN_DIR/evaluation.out" --error="$TRAINING_RUN_DIR/evaluation.err" \
+  jobs/evaluation.sh)
 echo "Job gestartet: $JOB3"
 echo "Warte auf Abschluss …"
 while squeue -j "$JOB3" 2>/dev/null | grep -q "$JOB3"; do sleep 60; done
@@ -56,4 +62,4 @@ echo ""
 echo "========== Train+Eval-Pipeline fertig =========="
 echo "Dataset-Run: $DATASET_RUN_NAME"
 echo "Alles in einem Ordner: $TRAINING_RUN_DIR"
-echo "  (projection_heads_pair.pt, projection_heads_genre.pt, meta_*.json, evaluation_output.txt)"
+echo "  (projection_heads_*.pt, meta_*.json, training_*.out/.err, evaluation.out/.err, evaluation_output.txt)"
