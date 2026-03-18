@@ -7,7 +7,7 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 import torch
 from torch.utils.data import DataLoader
@@ -29,27 +29,49 @@ EMBEDDINGS_DIR = run_dir / "embeddings"
 TRAIN_VAL_TEST_SPLIT_CSV = run_dir / "train_val_test_split.csv"
 DEVICE = config.DEVICE
 
-# Neueste Training-Runs für Pair und Genre (oder Fallback auf Config-Pfade)
-pair_run_dir = config.get_latest_training_run_with("projection_heads_pair.pt")
-genre_run_dir = config.get_latest_training_run_with("projection_heads_genre.pt")
-pair_path = pair_run_dir if pair_run_dir else None
-genre_path = genre_run_dir if genre_run_dir else None
+# Ein Ordner (Pipeline) oder neueste Einzel-Runs für Pair/Genre
+if os.environ.get("TRAINING_RUN_DIR"):
+    shared_run_dir = Path(os.environ["TRAINING_RUN_DIR"])
+    pair_path = shared_run_dir if (shared_run_dir / "projection_heads_pair.pt").exists() else None
+    genre_path = shared_run_dir if (shared_run_dir / "projection_heads_genre.pt").exists() else None
+    pair_run_dir = shared_run_dir if pair_path else None
+    genre_run_dir = shared_run_dir if genre_path else None
+else:
+    pair_run_dir = config.get_latest_training_run_with("projection_heads_pair.pt")
+    genre_run_dir = config.get_latest_training_run_with("projection_heads_genre.pt")
+    pair_path = pair_run_dir if pair_run_dir else None
+    genre_path = genre_run_dir if genre_run_dir else None
 
-def _meta_commit(run_dir: Optional[Path]) -> str:
+
+def _meta_commit(run_dir: Optional[Path], meta_name: str = "meta.json") -> str:
     if run_dir is None:
         return ""
-    try:
-        with open(run_dir / "meta.json", encoding="utf-8") as f:
-            m = json.load(f)
-        return m.get("git_commit", "") or ""
-    except Exception:
-        return ""
+    for name in (meta_name, "meta.json"):
+        p = run_dir / name
+        if p.exists():
+            try:
+                with open(p, encoding="utf-8") as f:
+                    m = json.load(f)
+                return m.get("git_commit", "") or ""
+            except Exception:
+                pass
+    return ""
 
-print(f"Datum: {datetime.now().strftime('%Y-%m-%d %H:%M')}", flush=True)
-print(f"Git-Commit (Eval): {config.get_git_commit()}{' (dirty)' if config.get_git_dirty() else ''}", flush=True)
-print(f"Dataset-Run: {run_name}", flush=True)
-print(f"Pair-based Head: {pair_path or config.PROJECTION_HEADS_PATH} (train commit: {_meta_commit(pair_run_dir) or '-'})", flush=True)
-print(f"Genre-based Head: {genre_path or config.PROJECTION_HEADS_GENRE_PATH} (train commit: {_meta_commit(genre_run_dir) or '-'})", flush=True)
+
+# Ausgabe sammeln, damit wir sie bei Pipeline in den Run-Ordner schreiben können
+_out_lines: List[str] = []
+
+
+def _out(s: str) -> None:
+    print(s, flush=True)
+    _out_lines.append(s)
+
+
+_out(f"Datum: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+_out(f"Git-Commit (Eval): {config.get_git_commit()}{' (dirty)' if config.get_git_dirty() else ''}")
+_out(f"Dataset-Run: {run_name}")
+_out(f"Pair-based Head: {pair_path or config.PROJECTION_HEADS_PATH} (train commit: {_meta_commit(pair_run_dir, 'meta_pair.json') or '-'})")
+_out(f"Genre-based Head: {genre_path or config.PROJECTION_HEADS_GENRE_PATH} (train commit: {_meta_commit(genre_run_dir, 'meta_genre.json') or '-'})")
 
 test_ds = PairDataset("test", TRAIN_VAL_TEST_SPLIT_CSV, EMBEDDINGS_DIR)
 test_loader = DataLoader(test_ds, batch_size=32, shuffle=False, num_workers=0)
@@ -60,7 +82,7 @@ video_head_genre, audio_head_genre = load_projection_heads_genre(genre_path)
 labels = labels_from_split_csv(
     TRAIN_VAL_TEST_SPLIT_CSV, "test", relevance_column="label", embeddings_dir=EMBEDDINGS_DIR
 )
-print("Labels shape:", labels.shape)
+_out("Labels shape: " + str(labels.shape))
 
 # Test-Embeddings laden (V = Video, A = Audio)
 V_list, A_list = [], []
@@ -80,24 +102,34 @@ with torch.no_grad():
 sim_pair = (v_pair @ a_pair.T).cpu()
 sim_genre = (v_genre @ a_genre.T).cpu()
 
-print("sim_baseline shape:", sim_baseline.shape)
-print("sim_pair shape:", sim_pair.shape)
-print("sim_genre shape:", sim_genre.shape)
+_out("sim_baseline shape: " + str(sim_baseline.shape))
+_out("sim_pair shape: " + str(sim_pair.shape))
+_out("sim_genre shape: " + str(sim_genre.shape))
 
 
 def print_metrics(name, sim, labels):
-    print(f"  {name}")
-    print("    MRR:", MRR(sim, labels), "| Recall@1:", recall_at_k(sim, 1, labels),
-          "| Recall@5:", recall_at_k(sim, 5, labels), "| Recall@10:", recall_at_k(sim, 10, labels),
-          "| Mean Rank:", mean_rank(sim, labels))
+    _out(f"  {name}")
+    _out("    MRR: " + str(MRR(sim, labels)) + " | Recall@1: " + str(recall_at_k(sim, 1, labels)) +
+         " | Recall@5: " + str(recall_at_k(sim, 5, labels)) + " | Recall@10: " + str(recall_at_k(sim, 10, labels)) +
+         " | Mean Rank: " + str(mean_rank(sim, labels)))
 
 
-print("=== V→A (Video als Query, Audio retrieval) ===")
+_out("=== V→A (Video als Query, Audio retrieval) ===")
 print_metrics("Baseline", sim_baseline, labels)
 print_metrics("Pair-based", sim_pair, labels)
 print_metrics("Genre-based", sim_genre, labels)
-print()
-print("=== A→V (Audio als Query, Video retrieval) ===")
+_out("")
+_out("=== A→V (Audio als Query, Video retrieval) ===")
 print_metrics("Baseline", sim_baseline.T, labels)
 print_metrics("Pair-based", sim_pair.T, labels)
 print_metrics("Genre-based", sim_genre.T, labels)
+
+# Bei Pipeline: Evaluation-Ausgabe in denselben Run-Ordner schreiben
+if os.environ.get("TRAINING_RUN_DIR"):
+    out_path = Path(os.environ["TRAINING_RUN_DIR"]) / "evaluation_output.txt"
+    _out_lines.append("")
+    _out_lines.append("Gespeichert: " + str(out_path))
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(_out_lines))
+    print("", flush=True)
+    print("Gespeichert: " + str(out_path), flush=True)

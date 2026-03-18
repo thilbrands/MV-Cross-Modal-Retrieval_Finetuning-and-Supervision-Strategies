@@ -1,8 +1,8 @@
 #!/bin/bash
 #
 # Training + Evaluation: Pair-Training → Genre-Training → Evaluation.
-# Startet nacheinander drei Slurm-Jobs; jeder nutzt den gleichen Dataset-Run.
-# Heads landen in training_runs/<Datum_Uhrzeit>/; Evaluation nutzt die neuesten.
+# Erstellt einen gemeinsamen Ordner training_runs/<Datum_Uhrzeit>/; alle drei
+# Schritte speichern darin (Heads, Meta, Evaluation-Ausgabe).
 #
 # Nutzung (vom Repo-Root auf dem Cluster):
 #   bash run_train_and_eval.sh
@@ -21,11 +21,16 @@ if [[ -z "$DATASET_RUN_NAME" ]]; then
   echo "FEHLER: DATASET_RUN_NAME nicht gesetzt und kein Run unter datasets/." >&2
   exit 1
 fi
+
+# Ein gemeinsamer Training-Run-Ordner für alle drei Schritte
+export TRAINING_RUN_DIR
+TRAINING_RUN_DIR=$(python3 -c "import sys; sys.path.insert(0,'.'); import config; d=config.get_new_training_run_dir(); print(d)")
 echo "Dataset-Run: $DATASET_RUN_NAME"
+echo "Training-Run (alle Ausgaben): $TRAINING_RUN_DIR"
 echo ""
 
 echo "========== 1/3 Pair-basiertes Training =========="
-JOB1=$(sbatch --parsable --export=DATASET_RUN_NAME jobs/pair_based_training.sh)
+JOB1=$(sbatch --parsable --export=DATASET_RUN_NAME,TRAINING_RUN_DIR jobs/pair_based_training.sh)
 echo "Job gestartet: $JOB1"
 echo "Warte auf Abschluss …"
 while squeue -j "$JOB1" 2>/dev/null | grep -q "$JOB1"; do sleep 60; done
@@ -33,7 +38,7 @@ echo "Pair-Training beendet."
 
 echo ""
 echo "========== 2/3 Genre-basiertes Training =========="
-JOB2=$(sbatch --parsable --export=DATASET_RUN_NAME jobs/genre_based_training.sh)
+JOB2=$(sbatch --parsable --export=DATASET_RUN_NAME,TRAINING_RUN_DIR jobs/genre_based_training.sh)
 echo "Job gestartet: $JOB2"
 echo "Warte auf Abschluss …"
 while squeue -j "$JOB2" 2>/dev/null | grep -q "$JOB2"; do sleep 60; done
@@ -41,7 +46,7 @@ echo "Genre-Training beendet."
 
 echo ""
 echo "========== 3/3 Evaluation =========="
-JOB3=$(sbatch --parsable --export=DATASET_RUN_NAME jobs/evaluation.sh)
+JOB3=$(sbatch --parsable --export=DATASET_RUN_NAME,TRAINING_RUN_DIR jobs/evaluation.sh)
 echo "Job gestartet: $JOB3"
 echo "Warte auf Abschluss …"
 while squeue -j "$JOB3" 2>/dev/null | grep -q "$JOB3"; do sleep 60; done
@@ -50,5 +55,5 @@ echo "Evaluation beendet."
 echo ""
 echo "========== Train+Eval-Pipeline fertig =========="
 echo "Dataset-Run: $DATASET_RUN_NAME"
-echo "Heads + meta: WORK_ROOT/training_runs/<Datum_Uhrzeit>/"
-echo "Logs: WORK_ROOT/logs/"
+echo "Alles in einem Ordner: $TRAINING_RUN_DIR"
+echo "  (projection_heads_pair.pt, projection_heads_genre.pt, meta_*.json, evaluation_output.txt)"

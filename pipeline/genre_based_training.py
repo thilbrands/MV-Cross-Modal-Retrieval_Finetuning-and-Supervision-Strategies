@@ -27,8 +27,12 @@ EMBEDDINGS_DIR = dataset_dir / "embeddings"
 TRAIN_VAL_TEST_SPLIT_CSV = dataset_dir / "train_val_test_split.csv"
 DEVICE = config.DEVICE
 
-# Neuer Training-Run-Ordner (Datum_Uhrzeit)
-training_run_dir = config.get_new_training_run_dir()
+# Gemeinsamer Ordner (von run_train_and_eval.sh) oder neuer Einzel-Run
+if os.environ.get("TRAINING_RUN_DIR"):
+    training_run_dir = Path(os.environ["TRAINING_RUN_DIR"])
+    training_run_dir.mkdir(parents=True, exist_ok=True)
+else:
+    training_run_dir = config.get_new_training_run_dir()
 CHECKPOINT_PATH = training_run_dir / "projection_heads_genre.pt"
 
 
@@ -136,7 +140,7 @@ meta = {
     "training_type": "genre",
     "hyperparams": {"epochs": num_epochs, "lr": 1e-3, "batch_size": 32, "temp": 0.07},
 }
-with open(training_run_dir / "meta.json", "w", encoding="utf-8") as f:
+with open(training_run_dir / "meta_genre.json", "w", encoding="utf-8") as f:
     json.dump(meta, f, indent=2)
 
 print(f"Gespeichert: {CHECKPOINT_PATH}", flush=True)

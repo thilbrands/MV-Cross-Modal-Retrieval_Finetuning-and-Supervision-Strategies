@@ -28,8 +28,12 @@ EMBEDDINGS_DIR = dataset_dir / "embeddings"
 TRAIN_VAL_TEST_SPLIT_CSV = dataset_dir / "train_val_test_split.csv"
 DEVICE = config.DEVICE
 
-# Neuer Training-Run-Ordner (Datum_Uhrzeit)
-training_run_dir = config.get_new_training_run_dir()
+# Gemeinsamer Ordner (von run_train_and_eval.sh) oder neuer Einzel-Run
+if os.environ.get("TRAINING_RUN_DIR"):
+    training_run_dir = Path(os.environ["TRAINING_RUN_DIR"])
+    training_run_dir.mkdir(parents=True, exist_ok=True)
+else:
+    training_run_dir = config.get_new_training_run_dir()
 CHECKPOINT_PATH = training_run_dir / "projection_heads_pair.pt"
 
 
@@ -94,7 +98,7 @@ for epoch in range(num_epochs):
     print(f"Epoch {epoch+1}/{num_epochs}  train={train_loss:.4f}  val={val_loss:.4f}  best_val={best_val:.4f}", flush=True)
     progress_stderr(epoch + 1, num_epochs)
 
-# Metadaten für Nachvollziehbarkeit
+# Metadaten für Nachvollziehbarkeit (meta_pair.json wenn gemeinsamer Run, sonst meta.json)
 meta = {
     "timestamp": datetime.now().isoformat(),
     "dataset_run": run_name,
@@ -103,7 +107,8 @@ meta = {
     "training_type": "pair",
     "hyperparams": {"epochs": num_epochs, "lr": 1e-3, "batch_size": 32, "temp": 0.07},
 }
-with open(training_run_dir / "meta.json", "w", encoding="utf-8") as f:
+meta_file = "meta_pair.json" if os.environ.get("TRAINING_RUN_DIR") else "meta.json"
+with open(training_run_dir / meta_file, "w", encoding="utf-8") as f:
     json.dump(meta, f, indent=2)
 
 print(f"Gespeichert: {CHECKPOINT_PATH}", flush=True)
