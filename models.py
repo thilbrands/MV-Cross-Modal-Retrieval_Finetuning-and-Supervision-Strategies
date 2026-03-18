@@ -26,17 +26,17 @@ def load_models(device=None):
 
 
 class ProjectionHead(nn.Module):
-    """2-Layer-MLP: Linear(512, 512) -> ReLU -> Linear(512, 512)."""
-    def __init__(self, in_dim=512, out_dim=512):
+    """
+    Linearer Projection-Head: Linear(in_dim, out_dim).
+    CLIP/Wav2CLIP liefern 512-dim; kleinere out_dim reduziert Overfitting.
+    Default 256: ~131k Parameter pro Head.
+    """
+    def __init__(self, in_dim=512, out_dim=256):
         super().__init__()
-        self.mlp = nn.Sequential(
-            nn.Linear(in_dim, out_dim),
-            nn.ReLU(inplace=True),
-            nn.Linear(out_dim, out_dim),
-        )
+        self.proj = nn.Linear(in_dim, out_dim)
 
     def forward(self, x):
-        return self.mlp(x)
+        return self.proj(x)
 
 
 def _checkpoint_path(path, default_path, filename_in_dir):
