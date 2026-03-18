@@ -28,10 +28,9 @@ def load_models(device=None):
 class ProjectionHead(nn.Module):
     """
     Linearer Projection-Head: Linear(in_dim, out_dim).
-    CLIP/Wav2CLIP liefern 512-dim; kleinere out_dim reduziert Overfitting.
-    Default 256: ~131k Parameter pro Head.
+    CLIP/Wav2CLIP liefern 512-dim;
     """
-    def __init__(self, in_dim=512, out_dim=256):
+    def __init__(self, in_dim=512, out_dim=64):
         super().__init__()
         self.proj = nn.Linear(in_dim, out_dim)
 
