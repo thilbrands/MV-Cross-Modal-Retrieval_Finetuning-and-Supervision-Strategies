@@ -4,6 +4,7 @@ Logik wie in old/09_evaluation.ipynb.
 """
 import csv
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 import torch
@@ -13,7 +14,7 @@ def labels_from_split_csv(
     split_csv: Path,
     split_name: str,
     relevance_column: str = "label",
-    embeddings_dir: Path | None = None,
+    embeddings_dir: Optional[Path] = None,
 ) -> np.ndarray:
     """Labels für Split in derselben Reihenfolge wie PairDataset(split_name, ...).
     Wenn embeddings_dir gesetzt, nur Zeilen mit existierenden video/audio .npy (wie PairDataset)."""

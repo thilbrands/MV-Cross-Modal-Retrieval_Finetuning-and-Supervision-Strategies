@@ -6,7 +6,7 @@ import json
 import subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Tuple, List, Dict
+from typing import Dict, List, Optional, Tuple
 from datetime import datetime
 
 # Repo-Root für Imports (config liegt im Repo-Root)
@@ -72,8 +72,8 @@ def write_run_config(
     start_time: str,
     git_commit: str,
     status: str,
-    job_id: str | None,
-    end_time: str | None = None,
+    job_id: Optional[str],
+    end_time: Optional[str] = None,
 ) -> None:
     cfg = {
         "run_name": run_name,

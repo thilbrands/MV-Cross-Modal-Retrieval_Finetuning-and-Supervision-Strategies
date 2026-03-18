@@ -6,6 +6,7 @@ werden per Umgebungsvariable oder Default „neuester Run“ gesteuert.
 """
 import subprocess
 from pathlib import Path
+from typing import Optional
 
 
 # Fester Work-Root auf dem Cluster (nicht verhandelbar)
@@ -81,7 +82,7 @@ def get_new_training_run_dir() -> Path:
     return run_dir
 
 
-def get_latest_run_name() -> str | None:
+def get_latest_run_name() -> Optional[str]:
     """
     Name des zuletzt erstellten/geänderten Dataset-Runs (Ordner unter DATASETS_ROOT).
     Nutzbar als Default für Extract und (später) Training, wenn DATASET_RUN_NAME
@@ -97,7 +98,7 @@ def get_latest_run_name() -> str | None:
     return runs[0].name
 
 
-def get_latest_training_run_with(head_filename: str) -> Path | None:
+def get_latest_training_run_with(head_filename: str) -> Optional[Path]:
     """Neuester Ordner unter TRAINING_RUNS_ROOT, der head_filename enthält; sonst None."""
     if not TRAINING_RUNS_ROOT.exists():
         return None

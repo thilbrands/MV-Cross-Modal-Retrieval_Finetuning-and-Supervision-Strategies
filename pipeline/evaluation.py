@@ -7,6 +7,7 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 import torch
 from torch.utils.data import DataLoader
@@ -34,7 +35,7 @@ genre_run_dir = config.get_latest_training_run_with("projection_heads_genre.pt")
 pair_path = pair_run_dir if pair_run_dir else None
 genre_path = genre_run_dir if genre_run_dir else None
 
-def _meta_commit(run_dir: Path | None) -> str:
+def _meta_commit(run_dir: Optional[Path]) -> str:
     if run_dir is None:
         return ""
     try:
