@@ -16,7 +16,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_REPO_ROOT))
 import config
 from dataset import PairDataset
-from models import load_projection_heads, load_projection_heads_genre
+from models import ProjectionHead, load_projection_heads, load_projection_heads_genre
 from metrics import MRR, recall_at_k, mean_rank, labels_from_split_csv
 
 # Run: aus Umgebung oder neuester
@@ -95,14 +95,22 @@ A = torch.cat(A_list, dim=0).to(DEVICE)
 # Ähnlichkeitsmatrix: sim[i,j] = Video i vs Audio j
 sim_baseline = (V @ A.T).cpu()
 with torch.no_grad():
+    # Baseline: zufällig initialisierte Heads (gleiche Architektur wie trainiert, aber untrained)
+    video_head_rand = ProjectionHead().to(DEVICE).eval()
+    audio_head_rand = ProjectionHead().to(DEVICE).eval()
+    v_rand = video_head_rand(V)
+    a_rand = audio_head_rand(A)
+
     v_pair = video_head_pair(V)
     a_pair = audio_head_pair(A)
     v_genre = video_head_genre(V)
     a_genre = audio_head_genre(A)
+sim_rand = (v_rand @ a_rand.T).cpu()
 sim_pair = (v_pair @ a_pair.T).cpu()
 sim_genre = (v_genre @ a_genre.T).cpu()
 
 _out("sim_baseline shape: " + str(sim_baseline.shape))
+_out("sim_rand (untrained heads) shape: " + str(sim_rand.shape))
 _out("sim_pair shape: " + str(sim_pair.shape))
 _out("sim_genre shape: " + str(sim_genre.shape))
 
@@ -116,11 +124,13 @@ def print_metrics(name, sim, labels):
 
 _out("=== V→A (Video als Query, Audio retrieval) ===")
 print_metrics("Baseline", sim_baseline, labels)
+print_metrics("Untrained heads", sim_rand, labels)
 print_metrics("Pair-based", sim_pair, labels)
 print_metrics("Genre-based", sim_genre, labels)
 _out("")
 _out("=== A→V (Audio als Query, Video retrieval) ===")
 print_metrics("Baseline", sim_baseline.T, labels)
+print_metrics("Untrained heads", sim_rand.T, labels)
 print_metrics("Pair-based", sim_pair.T, labels)
 print_metrics("Genre-based", sim_genre.T, labels)
 
