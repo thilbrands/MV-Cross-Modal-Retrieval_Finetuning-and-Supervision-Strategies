@@ -83,7 +83,7 @@ MUSIC_GENRES = [
 def main() -> None:
     data_csv = Path(os.environ.get("DATA_CSV", str(config.DATA_CSV)))
     ontology_path = Path(os.environ.get("ONTOLOGY_JSON", str(config.ONTOLOGY_JSON)))
-    cap = int(os.environ.get("NUM_VIDEOS_PER_LABEL", "800"))
+    cap = int(os.environ.get("NUM_VIDEOS_PER_LABEL", "3000"))
 
     if not data_csv.is_file():
         print(f"FEHLER: DATA_CSV nicht gefunden: {data_csv}", file=sys.stderr)
