@@ -77,7 +77,7 @@ MUSIC_GENRES = [
     "Electronic music",
     "Country",
     "Reggae",
-    "Folk music",
+    "Funk",
     "Hip hop music",
     "Pop music",
     "Blues",
