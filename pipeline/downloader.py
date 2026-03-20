@@ -443,7 +443,7 @@ def main() -> None:
         "Pop music",
         "Blues",
     ]
-    num_videos_per_label = 800
+    num_videos_per_label = 3107*1,1
     log(f"Genres: {music_genres}")
     log(f"Videos pro Label: {num_videos_per_label}")
 
