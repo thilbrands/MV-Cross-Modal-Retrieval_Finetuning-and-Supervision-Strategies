@@ -5,6 +5,7 @@ import csv
 import json
 import subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from functools import lru_cache
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from datetime import datetime
@@ -222,15 +223,47 @@ def run(cmd, timeout=600) -> Tuple[bool, str]:
 VIDEO_QUALITY = "18"  # wie im Notebook
 
 
+@lru_cache(maxsize=1)
+def _yt_dlp_cookie_args() -> List[str]:
+    """
+    Optionales Cookie-Handling für yt-dlp, um Bot-Checks (z.B. 'Sign in to confirm you\\'re not a bot')
+    zu umgehen.
+
+    Env-Optionen (entweder A oder B):
+      - A: YT_DLP_COOKIES=/pfad/to/cookies.txt  (Netscape cookie jar Format; yt-dlp --cookies)
+      - B: YT_DLP_COOKIES_FROM_BROWSER=chrome|firefox  (yt-dlp --cookies-from-browser)
+    """
+    cookie_file = os.environ.get("YT_DLP_COOKIES", "").strip()
+    cookie_from_browser = os.environ.get("YT_DLP_COOKIES_FROM_BROWSER", "").strip()
+
+    if cookie_file and cookie_from_browser:
+        raise ValueError("Bitte entweder YT_DLP_COOKIES oder YT_DLP_COOKIES_FROM_BROWSER setzen, nicht beides.")
+
+    if cookie_from_browser:
+        log(f"[Download][yt-dlp] Nutze Cookies aus Browser: {cookie_from_browser}")
+        return ["--cookies-from-browser", cookie_from_browser]
+
+    if cookie_file:
+        p = Path(cookie_file)
+        if not p.is_file():
+            raise FileNotFoundError(f"YT_DLP_COOKIES gesetzt, aber Datei existiert nicht: {p}")
+        log(f"[Download][yt-dlp] Nutze Cookies-Datei: {p}")
+        return ["--cookies", str(p)]
+
+    return []
+
+
 def download_video_segment(
     youtube_id: str, start_sec: float, end_sec: float, out_path: Path
 ) -> Tuple[bool, str]:
+    cookie_args = _yt_dlp_cookie_args()
     cmd = [
         sys.executable,
         "-m",
         "yt_dlp",
         "--no-check-certificates",
         "--no-playlist",
+        *cookie_args,
         "-f",
         f"{VIDEO_QUALITY}/worst",
         "--merge-output-format",

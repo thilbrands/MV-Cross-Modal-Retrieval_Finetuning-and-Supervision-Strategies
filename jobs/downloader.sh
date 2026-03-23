@@ -15,6 +15,7 @@
 
 #SBATCH --output=/work2/ra39oxet-DatasetAudioSetSubset/logs/audioset_%j.out
 #SBATCH --error=/work2/ra39oxet-DatasetAudioSetSubset/logs/audioset_%j.err
+export YT_DLP_COOKIES="$HOME/ba_cluster/youtube_cookies.txt"
 
 WORK_ROOT="/work2/ra39oxet-DatasetAudioSetSubset"
 mkdir -p "$WORK_ROOT/logs"
