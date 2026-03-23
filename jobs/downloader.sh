@@ -15,7 +15,13 @@
 
 #SBATCH --output=/work2/ra39oxet-DatasetAudioSetSubset/logs/audioset_%j.out
 #SBATCH --error=/work2/ra39oxet-DatasetAudioSetSubset/logs/audioset_%j.err
-export YT_DLP_COOKIES="$HOME/ba_cluster/youtube_cookies.txt"
+
+# yt-dlp Auth:
+# Standardmäßig Browser-Cookies verwenden (z.B. firefox oder chrome).
+# Bei Bedarf explizit beim Start überschreiben:
+#   YT_DLP_COOKIES_FROM_BROWSER=chrome sbatch jobs/downloader.sh
+export YT_DLP_COOKIES_FROM_BROWSER="${YT_DLP_COOKIES_FROM_BROWSER:-chrome}"
+unset YT_DLP_COOKIES
 
 WORK_ROOT="/work2/ra39oxet-DatasetAudioSetSubset"
 mkdir -p "$WORK_ROOT/logs"
