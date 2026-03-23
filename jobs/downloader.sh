@@ -16,19 +16,19 @@
 #SBATCH --output=/work2/ra39oxet-DatasetAudioSetSubset/logs/audioset_%j.out
 #SBATCH --error=/work2/ra39oxet-DatasetAudioSetSubset/logs/audioset_%j.err
 
-# yt-dlp Auth:
-# Standardmäßig Browser-Cookies verwenden (z.B. firefox oder chrome).
-# Bei Bedarf explizit beim Start überschreiben:
-#   YT_DLP_COOKIES_FROM_BROWSER=chrome sbatch jobs/downloader.sh
-export YT_DLP_COOKIES_FROM_BROWSER="${YT_DLP_COOKIES_FROM_BROWSER:-chrome}"
-unset YT_DLP_COOKIES
-
 WORK_ROOT="/work2/ra39oxet-DatasetAudioSetSubset"
 mkdir -p "$WORK_ROOT/logs"
 
 # Repo-Root: Verzeichnis, aus dem sbatch aufgerufen wurde (Fallback: übergeordnetes Verzeichnis von jobs/)
 REPO_ROOT="${SLURM_SUBMIT_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
 cd "$REPO_ROOT" || { echo "FEHLER: cd nach $REPO_ROOT fehlgeschlagen." >&2; exit 1; }
+
+# yt-dlp Auth:
+# Standard: Cookies-Datei im Repo-Root verwenden (cookies.txt).
+# Optional beim Start überschreibbar, z.B.:
+#   YT_DLP_COOKIES=/pfad/zu/cookies.txt sbatch jobs/downloader.sh
+unset YT_DLP_COOKIES_FROM_BROWSER
+export YT_DLP_COOKIES="${YT_DLP_COOKIES:-$REPO_ROOT/cookies.txt}"
 
 module purge
 
@@ -44,6 +44,10 @@ if [[ -n "${CONDA_ENV_FFMPEG:-}" ]]; then
 else
   module load Python/3.11.5-GCCcore-13.2.0
 fi
+
+# JavaScript-Runtime für yt-dlp Challenge-Solver
+# Falls kein passendes Modul vorhanden ist, kann alternativ ein vorhandenes node-Binary im PATH genutzt werden.
+module load nodejs/20.12.2-GCCcore-13.2.0 2>/dev/null || module load Node.js/20.12.2 2>/dev/null || true
 
 # Venv „ba“ aktivieren (Python/yt-dlp; FFmpeg von Conda oder Modul/statisch)
 if [[ ! -f "$HOME/venv/ba/bin/activate" ]]; then
@@ -68,11 +72,18 @@ fi
 export AUDIOSET_DOWNLOAD_WORKERS="${AUDIOSET_DOWNLOAD_WORKERS:-2}"
 
 echo "Hostname: $(hostname)"
+echo "node: $(which node 2>/dev/null || echo 'NICHT GEFUNDEN')"
+echo "node version: $(node --version 2>/dev/null || echo 'NICHT GEFUNDEN')"
 echo "ffmpeg: $(which ffmpeg 2>/dev/null || echo 'NICHT GEFUNDEN')"
 echo "Download-Worker: $AUDIOSET_DOWNLOAD_WORKERS"
 echo "Slurm Job ID: $SLURM_JOB_ID"
 echo "WORK_ROOT: $WORK_ROOT"
 echo "Starte pipeline/downloader.py …"
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "FEHLER: node nicht gefunden. Bitte Node.js-Modul laden oder in der Umgebung installieren." >&2
+  exit 1
+fi
 
 export PYTHONUNBUFFERED=1
 python3 "$REPO_ROOT/pipeline/downloader.py"
