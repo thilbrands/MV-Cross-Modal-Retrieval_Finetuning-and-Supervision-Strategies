@@ -59,7 +59,7 @@ else
   fi
 fi
 
-export AUDIOSET_DOWNLOAD_WORKERS="${AUDIOSET_DOWNLOAD_WORKERS:-32}"
+export AUDIOSET_DOWNLOAD_WORKERS="${AUDIOSET_DOWNLOAD_WORKERS:-2}"
 
 echo "Hostname: $(hostname)"
 echo "ffmpeg: $(which ffmpeg 2>/dev/null || echo 'NICHT GEFUNDEN')"

@@ -311,7 +311,7 @@ def download_all_segments(subset_csv: Path, download_dir: Path) -> None:
         rows = list(reader)
 
     total = len(rows)
-    n_workers = int(os.environ.get("AUDIOSET_DOWNLOAD_WORKERS", "24"))
+    n_workers = int(os.environ.get("AUDIOSET_DOWNLOAD_WORKERS", "2"))
     log(f"[Download] ffmpeg: {shutil.which('ffmpeg')}")
     log(f"[Download] Subset-CSV geladen: {total} Zeilen. Parallele Downloads: {n_workers} Worker.")
     log(f"[Download] Fortschritt alle 100 Segmente …")
@@ -471,7 +471,7 @@ def main() -> None:
         "Electronic music",
         "Country",
         "Reggae",
-        "Folk music",
+        "Funk",
         "Hip hop music",
         "Pop music",
         "Blues",
