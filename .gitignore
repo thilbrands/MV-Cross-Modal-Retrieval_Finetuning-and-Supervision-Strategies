@@ -2,3 +2,4 @@ old/
 .DS_Store
 __pycache__/
 hyperparameters.txt
+youtube_cookies.txt
