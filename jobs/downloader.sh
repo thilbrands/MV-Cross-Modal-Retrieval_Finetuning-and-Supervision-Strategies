@@ -47,7 +47,7 @@ fi
 
 # JavaScript-Runtime für yt-dlp Challenge-Solver
 # Falls kein passendes Modul vorhanden ist, kann alternativ ein vorhandenes node-Binary im PATH genutzt werden.
-module load nodejs/20.12.2-GCCcore-13.2.0 2>/dev/null || module load Node.js/20.12.2 2>/dev/null || true
+module load nodejs/20.13.1-GCCcore-13.3.0
 
 # Venv „ba“ aktivieren (Python/yt-dlp; FFmpeg von Conda oder Modul/statisch)
 if [[ ! -f "$HOME/venv/ba/bin/activate" ]]; then
