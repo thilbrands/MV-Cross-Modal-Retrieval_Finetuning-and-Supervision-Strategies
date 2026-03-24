@@ -27,7 +27,7 @@ cd "$REPO_ROOT" || { echo "FEHLER: cd nach $REPO_ROOT fehlgeschlagen." >&2; exit
 # Standard: Cookies-Datei im Repo-Root verwenden (cookies.txt).
 # Optional beim Start überschreibbar, z.B.:
 #   YT_DLP_COOKIES=/pfad/zu/cookies.txt sbatch jobs/downloader.sh
-unset YT_DLP_COOKIES_FROM_BROWSER
+unset YT_DLP_COOKIES
 export YT_DLP_COOKIES="${YT_DLP_COOKIES:-$REPO_ROOT/cookies.txt}"
 
 module purge
