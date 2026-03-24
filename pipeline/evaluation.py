@@ -17,7 +17,14 @@ sys.path.insert(0, str(_REPO_ROOT))
 import config
 from dataset import PairDataset
 from models import ProjectionHead, load_projection_heads, load_projection_heads_genre
-from metrics import MRR, recall_at_k, mean_rank, labels_from_split_csv
+from metrics import (
+    MRR,
+    recall_at_k,
+    mean_rank,
+    labels_from_split_csv,
+    label_relevance_matrix,
+    pair_relevance_matrix,
+)
 
 # Run: aus Umgebung oder neuester
 run_name = os.environ.get("DATASET_RUN_NAME") or config.get_latest_run_name()
@@ -109,30 +116,54 @@ sim_rand = (v_rand @ a_rand.T).cpu()
 sim_pair = (v_pair @ a_pair.T).cpu()
 sim_genre = (v_genre @ a_genre.T).cpu()
 
+# Zwei Relevanz-Protokolle:
+# 1) Pair-basiert: nur exaktes Gegenstück (Diagonale)
+# 2) Label-basiert: gleiches Genre
+rel_pair = pair_relevance_matrix(sim_baseline.size(0))
+rel_label = label_relevance_matrix(labels)
+
 _out("sim_baseline shape: " + str(sim_baseline.shape))
 _out("sim_rand (untrained heads) shape: " + str(sim_rand.shape))
 _out("sim_pair shape: " + str(sim_pair.shape))
 _out("sim_genre shape: " + str(sim_genre.shape))
 
 
-def print_metrics(name, sim, labels):
+def print_metrics(name, sim, relevance):
     _out(f"  {name}")
-    _out("    MRR: " + str(MRR(sim, labels)) + " | Recall@1: " + str(recall_at_k(sim, 1, labels)) +
-         " | Recall@5: " + str(recall_at_k(sim, 5, labels)) + " | Recall@10: " + str(recall_at_k(sim, 10, labels)) +
-         " | Mean Rank: " + str(mean_rank(sim, labels)))
+    _out(
+        "    MRR: " + str(MRR(sim, relevance=relevance))
+        + " | Recall@1: " + str(recall_at_k(sim, 1, relevance=relevance))
+        + " | Recall@5: " + str(recall_at_k(sim, 5, relevance=relevance))
+        + " | Recall@10: " + str(recall_at_k(sim, 10, relevance=relevance))
+        + " | Mean Rank: " + str(mean_rank(sim, relevance=relevance))
+    )
 
 
+_out("=== Protokoll A: Pair-basierte Relevanz (exaktes Video-Audio-Paar) ===")
 _out("=== V→A (Video als Query, Audio retrieval) ===")
-print_metrics("Baseline", sim_baseline, labels)
-print_metrics("Untrained heads", sim_rand, labels)
-print_metrics("Pair-based", sim_pair, labels)
-print_metrics("Genre-based", sim_genre, labels)
+print_metrics("Baseline", sim_baseline, rel_pair)
+print_metrics("Untrained heads", sim_rand, rel_pair)
+print_metrics("Pair-based", sim_pair, rel_pair)
+print_metrics("Genre-based", sim_genre, rel_pair)
 _out("")
 _out("=== A→V (Audio als Query, Video retrieval) ===")
-print_metrics("Baseline", sim_baseline.T, labels)
-print_metrics("Untrained heads", sim_rand.T, labels)
-print_metrics("Pair-based", sim_pair.T, labels)
-print_metrics("Genre-based", sim_genre.T, labels)
+print_metrics("Baseline", sim_baseline.T, rel_pair.T)
+print_metrics("Untrained heads", sim_rand.T, rel_pair.T)
+print_metrics("Pair-based", sim_pair.T, rel_pair.T)
+print_metrics("Genre-based", sim_genre.T, rel_pair.T)
+_out("")
+_out("=== Protokoll B: Label-basierte Relevanz (gleiches Genre) ===")
+_out("=== V→A (Video als Query, Audio retrieval) ===")
+print_metrics("Baseline", sim_baseline, rel_label)
+print_metrics("Untrained heads", sim_rand, rel_label)
+print_metrics("Pair-based", sim_pair, rel_label)
+print_metrics("Genre-based", sim_genre, rel_label)
+_out("")
+_out("=== A→V (Audio als Query, Video retrieval) ===")
+print_metrics("Baseline", sim_baseline.T, rel_label.T)
+print_metrics("Untrained heads", sim_rand.T, rel_label.T)
+print_metrics("Pair-based", sim_pair.T, rel_label.T)
+print_metrics("Genre-based", sim_genre.T, rel_label.T)
 
 # Bei Pipeline: Evaluation-Ausgabe in denselben Run-Ordner schreiben
 if os.environ.get("TRAINING_RUN_DIR"):
