@@ -266,11 +266,8 @@ def download_video_segment_partial(
     # ffmpeg external downloader args:
     # -ss start seek
     # -t duration stop after duration
-    ext_down_args = [
-        "-ss", str(start_sec),
-        "-t", str(duration),
-        "-loglevel", "quiet",
-    ]
+    ext_down_args_str = f"-ss {start_sec} -t {duration} -loglevel quiet"
+
 
     cmd = [
         sys.executable,
@@ -290,7 +287,7 @@ def download_video_segment_partial(
         "--external-downloader",
         "ffmpeg",
         "--external-downloader-args",
-        *ext_down_args,
+        ext_down_args_str,
         "--no-warnings",
         "-o",
         str(out_path),
