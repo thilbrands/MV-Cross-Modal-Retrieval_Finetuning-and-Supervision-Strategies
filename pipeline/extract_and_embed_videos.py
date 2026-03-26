@@ -1,12 +1,4 @@
 """
-Extraktion + Embedding: Logik 1:1 aus old/03_extraktion_train.ipynb und
-old/04_embeddings_train.ipynb, in einem zusammenhängenden Skript. Pro Video
-werden Frames und Audio nur im RAM erzeugt, sofort mit CLIP bzw. Wav2CLIP
-verarbeitet – es gibt keine Ordner frames/ oder audio/, nur embeddings/.
-
-- Nutzt: segments_balanced.csv, downloads/*.mp4
-- Schreibt nur: embeddings/video/<video_id>.npy, embeddings/audio/<video_id>.npy
-
 Run: sbatch jobs/extract_and_embed_videos.sh (Default: neuester Run)
      oder DATASET_RUN_NAME=... sbatch jobs/extract_and_embed_videos.sh
 """
@@ -93,8 +85,7 @@ def build_video_list(raw_csv: Path, downloads_dir: Path) -> List[Dict[str, str]]
 def extract_frames_1fps(video_path: Path, target_fps: int = 1, max_seconds: int = 10):
     """
     Extrahiert Frames mit OpenCV bei 1 FPS (eine pro Sekunde).
-    Returns: list of RGB frames (numpy H,W,3), oder leere Liste bei Fehler.
-    [wie 03_extraktion_train]
+    Returns: list of RGB frames     
     """
     cap = cv2.VideoCapture(str(video_path))
     if not cap.isOpened():
@@ -123,7 +114,6 @@ def extract_audio_pyav(video_path: Path, target_sr: int = 16000):
     """
     Extrahiert Audio mit PyAV, Mono, optional auf target_sr resampled.
     Returns: (audio_np float32, sample_rate) oder (None, None) bei Fehler.
-    [wie 03_extraktion_train]
     """
     try:
         container = av.open(str(video_path))
@@ -164,20 +154,13 @@ def process_one_video(
     audio_dir: Path,
     device,
 ) -> Tuple[bool, str]:
-    """
-    Ein Video: MP4 öffnen, Frames extrahieren -> CLIP -> Mean-Pool -> speichern;
-    Audio extrahieren -> Wav2CLIP -> speichern. Kein frames/ oder audio/ auf Disk.
-    Returns (success, error_message).
-    """
     video_id = item["video_id"]
     mp4_path = Path(item["mp4_path"])
     video_out = video_dir / f"{video_id}.npy"
     audio_out = audio_dir / f"{video_id}.npy"
-
     if video_out.exists() and audio_out.exists():
         return True, ""
-
-    # Video: Frames im RAM extrahieren, jeden Frame mit CLIP encoden, dann Mittelwert [wie 04_embeddings_train]
+    # Video: Encode frames with CLIP and calculate mean pool
     if not video_out.exists():
         frames = extract_frames_1fps(mp4_path, target_fps=TARGET_FPS, max_seconds=10)
         if not frames:
@@ -190,8 +173,7 @@ def process_one_video(
         video_emb = video_emb / np.linalg.norm(video_emb)
         video_out.parent.mkdir(parents=True, exist_ok=True)
         np.save(video_out, video_emb.astype(np.float32))
-
-    # Audio: im RAM extrahieren, mit Wav2CLIP encoden [wie 04_embeddings_train]
+    # Audio: Encode with Wav2CLIP
     if not audio_out.exists():
         audio_np, sr = extract_audio_pyav(mp4_path, target_sr=TARGET_SR)
         if audio_np is None or len(audio_np) == 0:
@@ -240,7 +222,7 @@ def main() -> None:
     clip_model, clip_preprocess, wav2clip_model, device = load_models()
 
     log("=" * 60)
-    log("Extraktion + Embedding (CLIP / Wav2CLIP) – ohne Frames/Audio auf Disk")
+    log("Extraktion + Embedding (CLIP / Wav2CLIP)")
     log("=" * 60)
     log(f"RUN_NAME: {run_name}")
     log(f"RUN_DIR: {run_dir}")

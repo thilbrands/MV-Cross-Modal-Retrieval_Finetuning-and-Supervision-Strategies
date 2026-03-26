@@ -17,7 +17,6 @@ import config
 from dataset import PairDataset
 from models import ProjectionHead
 
-# Run: aus Umgebung oder neuester
 run_name = os.environ.get("DATASET_RUN_NAME") or config.get_latest_run_name()
 if not run_name:
     print("FEHLER: DATASET_RUN_NAME nicht gesetzt und kein Run unter DATASETS_ROOT.", flush=True)
@@ -35,13 +34,6 @@ else:
     training_run_dir = config.get_new_training_run_dir()
 CHECKPOINT_PATH = training_run_dir / "projection_heads_genre.pt"
 
-
-def progress_stderr(epoch_done: int, total: int) -> None:
-    """Nur Fortschritt in Prozent nach .err (für tail -f)."""
-    pct = int((epoch_done / total) * 100)
-    print(f"{pct:3d}%", file=sys.stderr, flush=True)
-
-
 train_ds = PairDataset("train", TRAIN_VAL_TEST_SPLIT_CSV, EMBEDDINGS_DIR, return_label=True)
 val_ds = PairDataset("val", TRAIN_VAL_TEST_SPLIT_CSV, EMBEDDINGS_DIR, return_label=True)
 train_loader = DataLoader(train_ds, batch_size=64, shuffle=True, num_workers=0)
@@ -55,8 +47,6 @@ num_epochs = 5
 best_val = float("inf")
 print(f"Dataset-Run: {run_name} | Train: {len(train_ds)} | Val: {len(val_ds)} | Epochs: {num_epochs} | Device: {DEVICE}", flush=True)
 print(f"Training-Run: {training_run_dir}", flush=True)
-progress_stderr(0, num_epochs)
-
 
 def genre_supcon_loss(v_proj, a_proj, labels, temp: float = 0.07):
     """
@@ -123,7 +113,6 @@ for epoch in range(num_epochs):
             CHECKPOINT_PATH,
         )
     print(f"Epoch {epoch+1}/{num_epochs}  train={train_loss:.4f}  val={val_loss:.4f}  best_val={best_val:.4f}", flush=True)
-    progress_stderr(epoch + 1, num_epochs)
 
 # Metadaten für Nachvollziehbarkeit
 meta = {
