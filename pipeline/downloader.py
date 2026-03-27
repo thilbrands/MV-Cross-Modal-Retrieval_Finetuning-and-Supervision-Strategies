@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import os
 import shutil
 import sys
@@ -11,17 +12,21 @@ from typing import Dict, List, Optional, Tuple
 from datetime import datetime
 
 # Repo-Root für Imports (config liegt im Repo-Root)
-REPO_ROOT = Path(__file__).resolve().parents[1]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+
 import config
 
+
 """
-AudioSet-Download für den Cluster (1:1-Logik aus dem ursprünglichen Notebook).
-- Eingabe: fester Daten-Ordner auf work2 (audioset).
-- Ausgabe: pro Run ein eigener Unterordner unterhalb von datasets/ mit Config-Datei.
-- Ausführung: sbatch jobs/downloader.sh
+AudioSet-Cluster-Download (downloader2):
+- Phase 1: Ontology laden
+- Phase 2: segments_raw.csv bauen (identisch zu pipeline/downloader.py)
+- Phase 3: Video-Partial-Download (angepasst)
+- Phase 4: segments_balanced.csv bauen (identisch zu pipeline/downloader.py)
 """
+
 
 WORK_ROOT = config.WORK_ROOT
 DATA_DIR = config.DATA_DIR
@@ -29,7 +34,7 @@ DATA_CSV = config.DATA_CSV
 ONTOLOGY_JSON = config.ONTOLOGY_JSON
 DATASETS_ROOT = config.DATASETS_ROOT
 
-# Run-Name: Datum_Uhrzeit + Task-Name, z.B. 2026-03-13_14-52-10_audioset
+# Run-Name: Datum_Uhrzeit + Task-Name
 _timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 RUN_NAME = f"{_timestamp}_audioset"
 
@@ -49,23 +54,8 @@ CONFIG_PATH = RUN_DIR / "config.json"
 
 
 def log(msg: str) -> None:
-    """Ausgabe sofort in Slurm-Log (flush), damit man sieht, wo der Job hängt."""
+    # Ausgabe sofort in Slurm-Log (flush), damit man sieht, wo der Job hängt.
     print(msg, flush=True)
-
-
-def get_git_commit() -> str:
-    try:
-        result = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            cwd=str(REPO_ROOT),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-            text=True,
-            check=True,
-        )
-        return result.stdout.strip()
-    except Exception:
-        return "UNKNOWN"
 
 
 def write_run_config(
@@ -108,6 +98,7 @@ def build_subset_csv(
     music_genres: List[str],
     num_videos_per_label: int,
 ) -> None:
+    # IDENTISCH zu pipeline/downloader.py (CSV-Erstellung)
     log("[Subset-CSV] Lese Eingabe-CSV …")
     segments = []
     with open(data_csv, "r", newline="", encoding="utf-8") as f:
@@ -159,7 +150,6 @@ def build_subset_csv(
                 if key in used_keys:
                     continue
                 used_keys.add(key)
-                # Pro Video/Segment nur ein Label (ein MID) – das des zugewiesenen Genres
                 all_rows.append(
                     {
                         "yt_id": ytid,
@@ -188,7 +178,7 @@ def build_subset_csv(
     log(f"[Subset-CSV] Geschrieben: {out_csv} mit {len(all_rows)} Zeilen.")
 
 
-def run(cmd, timeout=600) -> Tuple[bool, str]:
+def run(cmd: List[str], timeout: int = 600) -> Tuple[bool, str]:
     try:
         p = subprocess.run(
             cmd,
@@ -197,12 +187,10 @@ def run(cmd, timeout=600) -> Tuple[bool, str]:
             text=True,
             timeout=timeout,
         )
-        # Fehlermeldung aus stderr: bei "ffmpeg exited" mehr Kontext (ffmpeg-Ausgabe), sonst erste ERROR-Zeile
         raw = (p.stderr or "").strip()
         if not raw:
             err = ""
         elif "ffmpeg exited" in raw.lower():
-            # Mehr Kontext, damit die echte ffmpeg-Meldung sichtbar wird (oft direkt vor/nach "ffmpeg exited")
             err = raw[:2000]
         elif "ERROR:" in raw:
             for line in raw.split("\n"):
@@ -225,14 +213,6 @@ VIDEO_QUALITY = "18"  # wie im Notebook
 
 @lru_cache(maxsize=1)
 def _yt_dlp_cookie_args() -> List[str]:
-    """
-    Optionales Cookie-Handling für yt-dlp, um Bot-Checks (z.B. 'Sign in to confirm you\\'re not a bot')
-    zu umgehen.
-
-    Env-Optionen (entweder A oder B):
-      - A: YT_DLP_COOKIES=/pfad/to/cookies.txt  (Netscape cookie jar Format; yt-dlp --cookies)
-      - B: YT_DLP_COOKIES_FROM_BROWSER=chrome|firefox  (yt-dlp --cookies-from-browser)
-    """
     cookie_file = os.environ.get("YT_DLP_COOKIES", "").strip()
     cookie_from_browser = os.environ.get("YT_DLP_COOKIES_FROM_BROWSER", "").strip()
 
@@ -253,10 +233,27 @@ def _yt_dlp_cookie_args() -> List[str]:
     return []
 
 
-def download_video_segment(
-    youtube_id: str, start_sec: float, end_sec: float, out_path: Path
+def download_video_segment_partial(
+    youtube_id: str,
+    start_sec: float,
+    end_sec: float,
+    out_path: Path,
 ) -> Tuple[bool, str]:
+    """
+    Partial download via ffmpeg external_downloader:
+    - yt-dlp übernimmt Media-Download/Feeding an ffmpeg
+    - ffmpeg bekommt -ss / -t, um nur den gewünschten Abschnitt zu extrahieren
+    """
     cookie_args = _yt_dlp_cookie_args()
+
+    duration = max(0.0, float(end_sec) - float(start_sec))
+
+    # ffmpeg external downloader args:
+    # -ss start seek
+    # -t duration stop after duration
+    ext_down_args_str = f"-ss {start_sec} -t {duration} -loglevel quiet"
+
+
     cmd = [
         sys.executable,
         "-m",
@@ -272,9 +269,10 @@ def download_video_segment(
         f"{VIDEO_QUALITY}/worst",
         "--merge-output-format",
         "mp4",
-        "--download-sections",
-        f"*{start_sec}-{end_sec}",
-        "--force-keyframes-at-cuts",  # Schnitt an Keyframes → weniger ffmpeg code 1/8 auf dem Cluster
+        "--external-downloader",
+        "ffmpeg",
+        "--external-downloader-args",
+        ext_down_args_str,
         "--no-warnings",
         "-o",
         str(out_path),
@@ -283,32 +281,34 @@ def download_video_segment(
     return run(cmd, timeout=600)
 
 
-def _download_one(
-    row: Dict[str, str], download_dir: Path
-) -> Tuple[Dict[str, str], bool, str]:
-    """Lädt ein Segment; gibt (row, ok, err) zurück. Für ThreadPool."""
+def _download_one(row: Dict[str, str], download_dir: Path) -> Tuple[Dict[str, str], bool, str]:
     yt_id = row["yt_id"].strip()
     try:
         start_sec = float(row["start_seconds"])
         end_sec = float(row["end_seconds"])
     except (ValueError, KeyError):
         return (row, False, "Ungültige start_seconds/end_seconds")
+
     safe_start = str(start_sec).replace(".", "p")
     out_path = download_dir / f"{yt_id}_{safe_start}.mp4"
+
     if out_path.exists():
         return (row, True, "")
-    ok, err = download_video_segment(yt_id, start_sec, end_sec, out_path)
+
+    ok, err = download_video_segment_partial(yt_id, start_sec, end_sec, out_path)
     if ok and out_path.exists():
         return (row, True, "")
+
     return (row, False, err or "Unbekannt")
 
 
 def download_all_segments(subset_csv: Path, download_dir: Path) -> None:
-    # yt-dlp braucht ffmpeg für Teildownloads (--download-sections); FFmpeg muss HTTPS können (OpenSSL/GnuTLS)
     if not shutil.which("ffmpeg"):
-        log("[Download] FEHLER: ffmpeg nicht im PATH. Bitte im Job-Skript 'module load FFmpeg' setzen.")
+        log("[Download] FEHLER: ffmpeg nicht im PATH. Bitte im Job-Skript 'conda_ffmpeg' aktivieren.")
         sys.exit(1)
-    log("[Download] Hinweis: Bei 'https protocol not found' ein anderes FFmpeg-Modul laden (z.B. FFmpeg/6.0 oder 7.0, mit OpenSSL).")
+
+    log("[Download] Hinweis: Partial Download via external_downloader ffmpeg (-ss/-t).")
+    log(f"[Download] ffmpeg: {shutil.which('ffmpeg')}")
 
     with open(subset_csv, "r", newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
@@ -316,19 +316,15 @@ def download_all_segments(subset_csv: Path, download_dir: Path) -> None:
 
     total = len(rows)
     n_workers = int(os.environ.get("AUDIOSET_DOWNLOAD_WORKERS", "2"))
-    log(f"[Download] ffmpeg: {shutil.which('ffmpeg')}")
     log(f"[Download] Subset-CSV geladen: {total} Zeilen. Parallele Downloads: {n_workers} Worker.")
-    log(f"[Download] Fortschritt alle 100 Segmente …")
+    log("[Download] Fortschritt alle 100 Segmente …")
 
     success_count = 0
     failed: List[Dict[str, str]] = []
     completed = 0
 
     with ThreadPoolExecutor(max_workers=n_workers) as executor:
-        futures = {
-            executor.submit(_download_one, row, download_dir): row
-            for row in rows
-        }
+        futures = {executor.submit(_download_one, row, download_dir): row for row in rows}
         for fut in as_completed(futures):
             completed += 1
             try:
@@ -360,6 +356,7 @@ def download_all_segments(subset_csv: Path, download_dir: Path) -> None:
                         "reason": str(e)[:500],
                     }
                 )
+
             if completed % 100 == 0 or completed == total:
                 log(f"[Download] Fortschritt: {completed}/{total} (ok={success_count}, failed={len(failed)})")
 
@@ -367,22 +364,20 @@ def download_all_segments(subset_csv: Path, download_dir: Path) -> None:
 
     if failed:
         with open(FAILED_CSV, "w", newline="", encoding="utf-8") as f:
-            fieldnames = [
-                "yt_id",
-                "start_seconds",
-                "end_seconds",
-                "positive_labels",
-                "reason",
-            ]
+            fieldnames = ["yt_id", "start_seconds", "end_seconds", "positive_labels", "reason"]
             w = csv.DictWriter(f, fieldnames=fieldnames)
             w.writeheader()
             w.writerows(failed)
-        log(f"[Download] Fehlgeschlagene Einträge gespeichert: {FAILED_CSV} (alle Gründe in Spalte 'reason')")
+        log(f"[Download] Fehlgeschlagene Einträge gespeichert: {FAILED_CSV} (Gründe in Spalte 'reason')")
 
 
 def build_cleaned_balanced_csv(
-    subset_csv: Path, cleaned_csv: Path, download_dir: Path, genres: List[str]
+    subset_csv: Path,
+    cleaned_csv: Path,
+    download_dir: Path,
+    genres: List[str],
 ) -> None:
+    # IDENTISCH zu pipeline/downloader.py (Balanced CSV)
     log("[Balanced-CSV] Lese Subset-CSV und prüfe existierende MP4s …")
     with open(subset_csv, "r", newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
@@ -428,10 +423,9 @@ def build_cleaned_balanced_csv(
 
 def main() -> None:
     start_time = datetime.now().isoformat(timespec="seconds")
-    git_commit = get_git_commit()
+    git_commit = config.get_git_commit() or "UNKNOWN"
     job_id = os.environ.get("SLURM_JOB_ID")
 
-    # Config direkt am Anfang mit Status "running" schreiben
     write_run_config(
         run_name=RUN_NAME,
         start_time=start_time,
@@ -442,8 +436,9 @@ def main() -> None:
     )
 
     log("=" * 60)
-    log("AudioSet-Cluster-Run gestartet (downloader)")
+    log("AudioSet-Cluster-Run gestartet (downloader2)")
     log("=" * 60)
+
     log(f"WORK_ROOT: {WORK_ROOT}")
     log(f"DATA_DIR: {DATA_DIR}")
     log(f"DATA_CSV: {DATA_CSV} (exists={DATA_CSV.exists()})")
@@ -456,6 +451,7 @@ def main() -> None:
     log(f"BALANCED_CSV: {BALANCED_CSV}")
     log(f"FAILED_CSV: {FAILED_CSV}")
     log(f"GIT_COMMIT: {git_commit}")
+
     if not DATA_CSV.exists():
         log("FEHLER: DATA_CSV fehlt. COPY_TO_WORK2.md ausführen?")
         sys.exit(1)
@@ -495,7 +491,7 @@ def main() -> None:
     )
 
     log("")
-    log("--- Phase 3: Downloads (yt-dlp) ---")
+    log("--- Phase 3: Downloads (yt-dlp + partial via ffmpeg external downloader) ---")
     download_all_segments(RAW_CSV, DOWNLOAD_DIR)
 
     log("")
@@ -513,7 +509,6 @@ def main() -> None:
     log("=" * 60)
 
     end_time = datetime.now().isoformat(timespec="seconds")
-    # Config am Ende mit Status "finished" und Endzeit überschreiben
     write_run_config(
         run_name=RUN_NAME,
         start_time=start_time,

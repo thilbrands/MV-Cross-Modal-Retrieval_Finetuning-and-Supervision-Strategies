@@ -86,7 +86,7 @@ if ! command -v node >/dev/null 2>&1; then
 fi
 
 export PYTHONUNBUFFERED=1
-python3 "$REPO_ROOT/pipeline/downloader.py"
+python3 "$REPO_ROOT/pipeline/downloader2.py"
 EXIT_CODE=$?
 echo "Job beendet."
 exit $EXIT_CODE
