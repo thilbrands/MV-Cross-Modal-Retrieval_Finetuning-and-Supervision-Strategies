@@ -18,15 +18,12 @@ from dataset import PairDataset
 from models import ProjectionHead
 
 run_name = os.environ.get("DATASET_RUN_NAME") or config.get_latest_run_name()
-if not run_name:
-    print("FEHLER: DATASET_RUN_NAME nicht gesetzt und kein Run unter DATASETS_ROOT.", flush=True)
-    sys.exit(1)
 dataset_dir = config.DATASETS_ROOT / run_name
 EMBEDDINGS_DIR = dataset_dir / "embeddings"
 TRAIN_VAL_TEST_SPLIT_CSV = dataset_dir / "train_val_test_split.csv"
 DEVICE = config.DEVICE
 
-# Gemeinsamer Ordner (von run_train_and_eval.sh) oder neuer Einzel-Run
+# Output-Directory
 if os.environ.get("TRAINING_RUN_DIR"):
     training_run_dir = Path(os.environ["TRAINING_RUN_DIR"])
     training_run_dir.mkdir(parents=True, exist_ok=True)
@@ -119,7 +116,6 @@ meta = {
     "timestamp": datetime.now().isoformat(),
     "dataset_run": run_name,
     "git_commit": config.get_git_commit(),
-    "git_dirty": config.get_git_dirty(),
     "training_type": "genre",
     "hyperparams": {"epochs": num_epochs, "lr": 1e-3, "batch_size": 32, "temp": 0.07},
 }

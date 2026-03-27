@@ -52,21 +52,6 @@ def get_git_commit() -> str:
         return ""
 
 
-def get_git_dirty() -> bool:
-    """True wenn es uncommittete Änderungen gibt."""
-    try:
-        out = subprocess.run(
-            ["git", "status", "--short"],
-            capture_output=True,
-            text=True,
-            timeout=5,
-            cwd=Path(__file__).resolve().parent,
-        )
-        return bool((out.stdout or "").strip()) and out.returncode == 0
-    except Exception:
-        return False
-
-
 def get_new_training_run_dir() -> Path:
     """Erstellt TRAINING_RUNS_ROOT und gibt einen neuen Unterordner zurück: YYYY-MM-DD_HH-MM, bei Kollision _1, _2, …"""
     from datetime import datetime

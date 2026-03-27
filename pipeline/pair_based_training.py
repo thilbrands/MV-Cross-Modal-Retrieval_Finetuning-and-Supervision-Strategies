@@ -48,7 +48,6 @@ print(f"Training-Run: {training_run_dir}", flush=True)
 
 
 def infonce_loss(v_proj, a_proj, temp=0.07):
-    """Logits = v_proj @ a_proj.T / temp; Labels = Diagonale (positives Paar)."""
     logits = (v_proj @ a_proj.T) / temp
     labels = torch.arange(v_proj.size(0), device=v_proj.device)
     return nn.functional.cross_entropy(logits, labels)
@@ -84,7 +83,6 @@ for epoch in range(num_epochs):
             CHECKPOINT_PATH,
         )
     print(f"Epoch {epoch+1}/{num_epochs}  train={train_loss:.4f}  val={val_loss:.4f}  best_val={best_val:.4f}", flush=True)
-    progress_stderr(epoch + 1, num_epochs)
 
 # Metadaten für Nachvollziehbarkeit (meta_pair.json wenn gemeinsamer Run, sonst meta.json)
 meta = {

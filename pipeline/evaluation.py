@@ -1,6 +1,5 @@
 """
 Evaluation: MRR, Recall@1/5/10, Mean Rank. V→A und A→V.
-Lädt neueste Heads aus training_runs/<Datum_Uhrzeit>/; oben: Datum, Git-Commit, verwendete Heads.
 """
 import json
 import os
@@ -75,7 +74,7 @@ def _out(s: str) -> None:
 
 
 _out(f"Datum: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
-_out(f"Git-Commit (Eval): {config.get_git_commit()}{' (dirty)' if config.get_git_dirty() else ''}")
+_out(f"Git-Commit (Eval): {config.get_git_commit()}")
 _out(f"Dataset-Run: {run_name}")
 _out(f"Pair-based Head: {pair_path or config.PROJECTION_HEADS_PATH} (train commit: {_meta_commit(pair_run_dir, 'meta_pair.json') or '-'})")
 _out(f"Genre-based Head: {genre_path or config.PROJECTION_HEADS_GENRE_PATH} (train commit: {_meta_commit(genre_run_dir, 'meta_genre.json') or '-'})")
