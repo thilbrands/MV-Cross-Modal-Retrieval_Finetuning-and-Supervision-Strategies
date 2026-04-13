@@ -35,14 +35,14 @@ for row in rows:
 
 labels = [s["label"] for s in samples]
 
-# Stratifiziert: 30 % Test, 70 % Train-Pool
+# Stratifiziert: 15 % Test, 85 % Train-Pool
 train_val, test_samples = train_test_split(
-    samples, test_size=0.3, stratify=labels, random_state=42
+    samples, test_size=0.15, stratify=labels, random_state=42
 )
 train_val_labels = [s["label"] for s in train_val]
-# Vom Train-Pool: 70 % Train, 30 % Val (stratifiziert)
+# Vom Train-Pool: 82.35 % Train, 17.65 % Val (stratifiziert) => final 70/15/15
 train_samples, val_samples = train_test_split(
-    train_val, test_size=0.3, stratify=train_val_labels, random_state=42
+    train_val, test_size=(15 / 85), stratify=train_val_labels, random_state=42
 )
 
 for s in train_samples:
