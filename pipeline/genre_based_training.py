@@ -40,7 +40,9 @@ video_head = ProjectionHead().to(DEVICE)
 audio_head = ProjectionHead().to(DEVICE)
 opt = torch.optim.Adam(list(video_head.parameters()) + list(audio_head.parameters()), lr=1e-3)
 
-num_epochs = 5
+num_epochs = 20
+patience = 3
+epochs_without_improvement = 0
 best_val = float("inf")
 print(f"Dataset-Run: {run_name} | Train: {len(train_ds)} | Val: {len(val_ds)} | Epochs: {num_epochs} | Device: {DEVICE}", flush=True)
 print(f"Training-Run: {training_run_dir}", flush=True)
@@ -105,11 +107,17 @@ for epoch in range(num_epochs):
 
     if val_loss < best_val:
         best_val = val_loss
+        epochs_without_improvement = 0
         torch.save(
             {"video_head": video_head.state_dict(), "audio_head": audio_head.state_dict()},
             CHECKPOINT_PATH,
         )
+    else:
+        epochs_without_improvement += 1
     print(f"Epoch {epoch+1}/{num_epochs}  train={train_loss:.4f}  val={val_loss:.4f}  best_val={best_val:.4f}", flush=True)
+    if epochs_without_improvement >= patience:
+        print(f"Early stopping at epoch {epoch+1} (patience={patience}).", flush=True)
+        break
 
 # Metadaten für Nachvollziehbarkeit
 meta = {
@@ -117,7 +125,7 @@ meta = {
     "dataset_run": run_name,
     "git_commit": config.get_git_commit(),
     "training_type": "genre",
-    "hyperparams": {"epochs": num_epochs, "lr": 1e-3, "batch_size": 32, "temp": 0.07},
+    "hyperparams": {"max_epochs": num_epochs, "patience": patience, "lr": 1e-3, "batch_size": 32, "temp": 0.07},
 }
 with open(training_run_dir / "meta_genre.json", "w", encoding="utf-8") as f:
     json.dump(meta, f, indent=2)
