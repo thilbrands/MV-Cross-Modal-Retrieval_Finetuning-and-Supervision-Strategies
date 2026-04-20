@@ -423,7 +423,7 @@ def build_cleaned_balanced_csv(
 
 def main() -> None:
     start_time = datetime.now().isoformat(timespec="seconds")
-    git_commit = config.get_git_commit() or "UNKNOWN"
+    git_commit = config.get_git_commit()
     job_id = os.environ.get("SLURM_JOB_ID")
 
     write_run_config(
