@@ -5,7 +5,7 @@
 # Nutzung (vom Repo-Root):
 #   bash run_tune_hyperparams.sh
 #   bash run_tune_hyperparams.sh 2026-03-13_18-12-31_audioset
-#   HP_BATCH_SIZE=64 HP_MAX_EPOCHS=20 HP_PATIENCE=3 HP_TUNE_WORKERS=1 bash run_tune_hyperparams.sh
+#   HP_BATCH_SIZE=64 HP_MAX_EPOCHS=20 HP_PATIENCE=3 HP_TUNE_WORKERS=12 bash run_tune_hyperparams.sh
 #
 set -euo pipefail
 
@@ -31,7 +31,7 @@ fi
 export HP_BATCH_SIZE="${HP_BATCH_SIZE:-64}"
 export HP_MAX_EPOCHS="${HP_MAX_EPOCHS:-20}"
 export HP_PATIENCE="${HP_PATIENCE:-3}"
-export HP_TUNE_WORKERS="${HP_TUNE_WORKERS:-1}"
+export HP_TUNE_WORKERS="${HP_TUNE_WORKERS:-12}"
 
 echo "========== Hyperparameter-Tuning =========="
 echo "Dataset-Run: $DATASET_RUN_NAME"

@@ -1,7 +1,7 @@
 """
 Grid-Tuning für Pair- und Genre-Training mit task-aligned Selection:
-- pair  -> Protokoll A (MRR avg V->A/A->V)
-- genre -> Protokoll B (MRR avg V->A/A->V)
+- pair  -> Protokoll A (Recall@10 avg V->A/A->V)
+- genre -> Protokoll B (Recall@10 avg V->A/A->V)
 
 Nutzung:
   TRAINING_TYPE=pair  python -m pipeline.tune_hyperparams
@@ -85,11 +85,11 @@ def _run_trial(
     with open(metrics_json, "r", encoding="utf-8") as f:
         m = json.load(f)
 
-    score = float(m["selection_score_mrr_avg"])
+    score = float(m["selection_score_recall_at_10_avg"])
     row = {
         "trial": trial_idx,
         "training_type": training_type,
-        "score_mrr_avg": score,
+        "score_recall_at_10_avg": score,
         "selection_protocol": m["selection_protocol"],
         "lr": lr,
         "out_dim": out_dim,
@@ -121,7 +121,7 @@ def main():
     batch_size = int(os.environ.get("HP_BATCH_SIZE", "64"))
     max_epochs = int(os.environ.get("HP_MAX_EPOCHS", "20"))
     patience = int(os.environ.get("HP_PATIENCE", "3"))
-    workers = int(os.environ.get("HP_TUNE_WORKERS", "1"))
+    workers = int(os.environ.get("HP_TUNE_WORKERS", "12"))
     if workers < 1:
         workers = 1
 
@@ -165,14 +165,14 @@ def main():
             futures.append(fut)
         for fut in concurrent.futures.as_completed(futures):
             row = fut.result()
-            score = row["score_mrr_avg"]
+            score = row["score_recall_at_10_avg"]
             rows.append(row)
             if score > best_score:
                 best_score = score
                 best_trial = row
-            print(f"  -> trial={row['trial']} score={score:.6f} (best={best_score:.6f})", flush=True)
+            print(f"  -> trial={row['trial']} r10_score={score:.6f} (best={best_score:.6f})", flush=True)
 
-    rows_sorted = sorted(rows, key=lambda x: x["score_mrr_avg"], reverse=True)
+    rows_sorted = sorted(rows, key=lambda x: x["score_recall_at_10_avg"], reverse=True)
     csv_path = tuning_root / "results.csv"
     with open(csv_path, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=list(rows_sorted[0].keys()))

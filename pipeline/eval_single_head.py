@@ -15,7 +15,7 @@ sys.path.insert(0, str(_REPO_ROOT))
 
 import config
 from dataset import PairDataset
-from metrics import MRR, recall_at_k, mean_rank, labels_from_split_csv, label_relevance_matrix, pair_relevance_matrix
+from metrics import recall_at_k, labels_from_split_csv, label_relevance_matrix, pair_relevance_matrix
 from models import load_projection_heads, load_projection_heads_genre
 
 
@@ -67,16 +67,16 @@ def main():
     rel_pair = pair_relevance_matrix(sim.size(0))
     rel_label = label_relevance_matrix(labels)
 
-    mrr_a_va, mrr_a_av, mrr_a_avg = _avg_bidir(MRR, sim, rel_pair)
-    mrr_b_va, mrr_b_av, mrr_b_avg = _avg_bidir(MRR, sim, rel_label)
-    r1_a_va, r1_a_av, r1_a_avg = _avg_bidir(lambda s, relevance: recall_at_k(s, 1, relevance=relevance), sim, rel_pair)
-    r1_b_va, r1_b_av, r1_b_avg = _avg_bidir(lambda s, relevance: recall_at_k(s, 1, relevance=relevance), sim, rel_label)
-    mr_a_va, mr_a_av, mr_a_avg = _avg_bidir(mean_rank, sim, rel_pair)
-    mr_b_va, mr_b_av, mr_b_avg = _avg_bidir(mean_rank, sim, rel_label)
+    r10_a_va, r10_a_av, r10_a_avg = _avg_bidir(
+        lambda s, relevance: recall_at_k(s, 10, relevance=relevance), sim, rel_pair
+    )
+    r10_b_va, r10_b_av, r10_b_avg = _avg_bidir(
+        lambda s, relevance: recall_at_k(s, 10, relevance=relevance), sim, rel_label
+    )
 
     # Task-aligned selection score:
     # pair -> Protokoll A, genre -> Protokoll B
-    selection_score = mrr_a_avg if training_type == "pair" else mrr_b_avg
+    selection_score = r10_a_avg if training_type == "pair" else r10_b_avg
 
     result = {
         "training_type": training_type,
@@ -84,16 +84,12 @@ def main():
         "dataset_run": run_name,
         "model_path": model_path,
         "selection_protocol": "A_pair" if training_type == "pair" else "B_label",
-        "selection_score_mrr_avg": float(selection_score),
+        "selection_score_recall_at_10_avg": float(selection_score),
         "protocol_a": {
-            "mrr": {"va": float(mrr_a_va), "av": float(mrr_a_av), "avg": float(mrr_a_avg)},
-            "recall_at_1": {"va": float(r1_a_va), "av": float(r1_a_av), "avg": float(r1_a_avg)},
-            "mean_rank": {"va": float(mr_a_va), "av": float(mr_a_av), "avg": float(mr_a_avg)},
+            "recall_at_10": {"va": float(r10_a_va), "av": float(r10_a_av), "avg": float(r10_a_avg)},
         },
         "protocol_b": {
-            "mrr": {"va": float(mrr_b_va), "av": float(mrr_b_av), "avg": float(mrr_b_avg)},
-            "recall_at_1": {"va": float(r1_b_va), "av": float(r1_b_av), "avg": float(r1_b_avg)},
-            "mean_rank": {"va": float(mr_b_va), "av": float(mr_b_av), "avg": float(mr_b_avg)},
+            "recall_at_10": {"va": float(r10_b_va), "av": float(r10_b_av), "avg": float(r10_b_avg)},
         },
     }
 

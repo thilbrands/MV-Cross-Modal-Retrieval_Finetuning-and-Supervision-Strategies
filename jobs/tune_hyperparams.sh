@@ -40,7 +40,7 @@ export PYTHONUNBUFFERED=1
 export HP_BATCH_SIZE="${HP_BATCH_SIZE:-64}"
 export HP_MAX_EPOCHS="${HP_MAX_EPOCHS:-20}"
 export HP_PATIENCE="${HP_PATIENCE:-3}"
-export HP_TUNE_WORKERS="${HP_TUNE_WORKERS:-1}"
+export HP_TUNE_WORKERS="${HP_TUNE_WORKERS:-12}"
 
 echo "Hostname: $(hostname)"
 echo "Slurm Job ID: $SLURM_JOB_ID"
