@@ -21,6 +21,11 @@
 
 set -euo pipefail
 
+# Robust gegen unbound variables unter `set -u`
+: "${PAIR_RESULTS_CSV:=}"
+: "${GENRE_RESULTS_CSV:=}"
+: "${DATASET_RUN_NAME:=}"
+
 WORK_ROOT="/work2/ra39oxet-DatasetAudioSetSubset"
 mkdir -p "$WORK_ROOT/logs"
 
@@ -43,11 +48,59 @@ export HP_PATIENCE="${HP_PATIENCE:-3}"
 
 echo "Hostname: $(hostname)"
 echo "Slurm Job ID: $SLURM_JOB_ID"
-echo "DATASET_RUN_NAME: ${DATASET_RUN_NAME:-<neuester Run>}"
+if [[ -z "${PAIR_RESULTS_CSV:-}" ]]; then
+  PAIR_RESULTS_CSV="$(python3 - <<'PY'
+import sys
+sys.path.insert(0, ".")
+import config
+root = config.TRAINING_RUNS_ROOT
+paths = [d / "results.csv" for d in root.glob("tuning_pair_*") if (d / "results.csv").exists()]
+paths.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+print(str(paths[0]) if paths else "")
+PY
+)"
+  export PAIR_RESULTS_CSV
+fi
+if [[ -z "${GENRE_RESULTS_CSV:-}" ]]; then
+  GENRE_RESULTS_CSV="$(python3 - <<'PY'
+import sys
+sys.path.insert(0, ".")
+import config
+root = config.TRAINING_RUNS_ROOT
+paths = [d / "results.csv" for d in root.glob("tuning_genre_*") if (d / "results.csv").exists()]
+paths.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+print(str(paths[0]) if paths else "")
+PY
+)"
+  export GENRE_RESULTS_CSV
+fi
+if [[ -z "${PAIR_RESULTS_CSV:-}" || -z "${GENRE_RESULTS_CSV:-}" ]]; then
+  echo "FEHLER: Keine results.csv gefunden. Setze PAIR_RESULTS_CSV und GENRE_RESULTS_CSV explizit." >&2
+  exit 1
+fi
+
+if [[ -z "${DATASET_RUN_NAME:-}" ]]; then
+  DATASET_RUN_NAME="$(python3 -c "import sys; sys.path.insert(0,'.'); import config; print(config.get_latest_run_name() or '')")"
+  export DATASET_RUN_NAME
+fi
+if [[ -z "${DATASET_RUN_NAME:-}" ]]; then
+  echo "FEHLER: DATASET_RUN_NAME nicht gesetzt und kein Run unter DATASETS_ROOT gefunden." >&2
+  exit 1
+fi
+
+echo "DATASET_RUN_NAME: $DATASET_RUN_NAME"
 echo "PAIR_RESULTS_CSV: $PAIR_RESULTS_CSV"
 echo "GENRE_RESULTS_CSV: $GENRE_RESULTS_CSV"
 echo "BATCH_SIZES=$BATCH_SIZES | HP_MAX_EPOCHS=$HP_MAX_EPOCHS | HP_PATIENCE=$HP_PATIENCE"
-echo "Starte run_tune_batchsize_fixed.sh …"
+echo "Starte fixed batchsize tuning …"
 
-bash "$REPO_ROOT/run_tune_batchsize_fixed.sh"
+echo "========== 1/2 Pair =========="
+TRAINING_TYPE=pair RESULTS_CSV="$PAIR_RESULTS_CSV" python3 "$REPO_ROOT/pipeline/tune_batchsize_fixed.py"
+
+echo ""
+echo "========== 2/2 Genre =========="
+TRAINING_TYPE=genre RESULTS_CSV="$GENRE_RESULTS_CSV" python3 "$REPO_ROOT/pipeline/tune_batchsize_fixed.py"
+
+echo ""
+echo "========== Fertig =========="
 exit $?

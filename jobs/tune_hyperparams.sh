@@ -44,9 +44,26 @@ export HP_TUNE_WORKERS="${HP_TUNE_WORKERS:-12}"
 
 echo "Hostname: $(hostname)"
 echo "Slurm Job ID: $SLURM_JOB_ID"
-echo "DATASET_RUN_NAME: ${DATASET_RUN_NAME:-<neuester Run>}"
+if [[ -z "${DATASET_RUN_NAME:-}" ]]; then
+  DATASET_RUN_NAME="$(python3 -c "import sys; sys.path.insert(0,'.'); import config; print(config.get_latest_run_name() or '')")"
+  export DATASET_RUN_NAME
+fi
+if [[ -z "${DATASET_RUN_NAME:-}" ]]; then
+  echo "FEHLER: DATASET_RUN_NAME nicht gesetzt und kein Run unter DATASETS_ROOT gefunden." >&2
+  exit 1
+fi
+echo "DATASET_RUN_NAME: $DATASET_RUN_NAME"
 echo "HP_BATCH_SIZE=$HP_BATCH_SIZE | HP_MAX_EPOCHS=$HP_MAX_EPOCHS | HP_PATIENCE=$HP_PATIENCE | HP_TUNE_WORKERS=$HP_TUNE_WORKERS"
-echo "Starte run_tune_hyperparams.sh …"
+echo "Starte tuning_pair + tuning_genre …"
 
-bash "$REPO_ROOT/run_tune_hyperparams.sh" "${DATASET_RUN_NAME:-}"
+echo "========== 1/2 Pair-Tuning (task-aligned: Protokoll A) =========="
+TRAINING_TYPE=pair python3 "$REPO_ROOT/pipeline/tune_hyperparams.py"
+
+echo ""
+echo "========== 2/2 Genre-Tuning (task-aligned: Protokoll B) =========="
+TRAINING_TYPE=genre python3 "$REPO_ROOT/pipeline/tune_hyperparams.py"
+
+echo ""
+echo "========== Tuning abgeschlossen =========="
+echo "Dataset-Run: $DATASET_RUN_NAME"
 exit $?
