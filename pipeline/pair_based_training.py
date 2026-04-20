@@ -17,6 +17,15 @@ import config
 from dataset import PairDataset
 from models import ProjectionHead
 
+def _env_int(name: str, default: int) -> int:
+    v = os.environ.get(name)
+    return int(v) if v is not None and v != "" else default
+
+
+def _env_float(name: str, default: float) -> float:
+    v = os.environ.get(name)
+    return float(v) if v is not None and v != "" else default
+
 
 run_name = os.environ.get("DATASET_RUN_NAME") or config.get_latest_run_name()
 dataset_dir = config.DATASETS_ROOT / run_name
@@ -31,22 +40,29 @@ else:
     training_run_dir = config.get_new_training_run_dir()
 CHECKPOINT_PATH = training_run_dir / "projection_heads_pair.pt"
 
+batch_size = _env_int("HP_BATCH_SIZE", 64)
+lr = _env_float("HP_LR", 1e-3)
+temp = _env_float("HP_TEMP", 0.07)
+out_dim = _env_int("HP_OUT_DIM", 64)
+head_type = os.environ.get("HP_HEAD_TYPE", "linear")
+hidden_dim = _env_int("HP_HIDDEN_DIM", 256)
+num_epochs = _env_int("HP_MAX_EPOCHS", 20)
+patience = _env_int("HP_PATIENCE", 3)
 
 train_ds = PairDataset("train", TRAIN_VAL_TEST_SPLIT_CSV, EMBEDDINGS_DIR)
 val_ds = PairDataset("val", TRAIN_VAL_TEST_SPLIT_CSV, EMBEDDINGS_DIR)
-train_loader = DataLoader(train_ds, batch_size=64, shuffle=True, num_workers=0)
-val_loader = DataLoader(val_ds, batch_size=64, shuffle=False, num_workers=0)
+train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=0)
+val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, num_workers=0)
 
-video_head = ProjectionHead().to(DEVICE)
-audio_head = ProjectionHead().to(DEVICE)
-opt = torch.optim.Adam(list(video_head.parameters()) + list(audio_head.parameters()), lr=1e-3)
+video_head = ProjectionHead(out_dim=out_dim, head_type=head_type, hidden_dim=hidden_dim).to(DEVICE)
+audio_head = ProjectionHead(out_dim=out_dim, head_type=head_type, hidden_dim=hidden_dim).to(DEVICE)
+opt = torch.optim.Adam(list(video_head.parameters()) + list(audio_head.parameters()), lr=lr)
 
-num_epochs = 20
-patience = 3
 epochs_without_improvement = 0
 best_val = float("inf")
 print(f"Dataset-Run: {run_name} | Train: {len(train_ds)} | Val: {len(val_ds)} | Epochs: {num_epochs} | Device: {DEVICE}", flush=True)
 print(f"Training-Run: {training_run_dir}", flush=True)
+print(f"Hyperparams: lr={lr} temp={temp} out_dim={out_dim} head_type={head_type} hidden_dim={hidden_dim} batch_size={batch_size} patience={patience}", flush=True)
 
 
 def infonce_loss(v_proj, a_proj, temp=0.07):
@@ -62,7 +78,7 @@ for epoch in range(num_epochs):
         v, a = v.to(DEVICE), a.to(DEVICE)
         opt.zero_grad()
         vp, ap = video_head(v), audio_head(a)
-        loss = infonce_loss(vp, ap)
+        loss = infonce_loss(vp, ap, temp=temp)
         loss.backward()
         opt.step()
         train_loss += loss.item() * v.size(0)
@@ -75,7 +91,7 @@ for epoch in range(num_epochs):
         for v, a in val_loader:
             v, a = v.to(DEVICE), a.to(DEVICE)
             vp, ap = video_head(v), audio_head(a)
-            val_loss += infonce_loss(vp, ap).item() * v.size(0)
+            val_loss += infonce_loss(vp, ap, temp=temp).item() * v.size(0)
     val_loss /= len(val_ds)
 
     if val_loss < best_val:
@@ -98,7 +114,16 @@ meta = {
     "dataset_run": run_name,
     "git_commit": config.get_git_commit(),
     "training_type": "pair",
-    "hyperparams": {"max_epochs": num_epochs, "patience": patience, "lr": 1e-3, "batch_size": 32, "temp": 0.07},
+    "hyperparams": {
+        "max_epochs": num_epochs,
+        "patience": patience,
+        "lr": lr,
+        "batch_size": batch_size,
+        "temp": temp,
+        "out_dim": out_dim,
+        "head_type": head_type,
+        "hidden_dim": hidden_dim,
+    },
 }
 meta_file = "meta_pair.json" if os.environ.get("TRAINING_RUN_DIR") else "meta.json"
 with open(training_run_dir / meta_file, "w", encoding="utf-8") as f:
