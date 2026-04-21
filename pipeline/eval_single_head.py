@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 import torch
+import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -61,6 +62,8 @@ def main():
     with torch.no_grad():
         vp = video_head(V)
         ap = audio_head(A)
+    vp = F.normalize(vp, p=2, dim=-1)
+    ap = F.normalize(ap, p=2, dim=-1)
     sim = (vp @ ap.T).cpu()
 
     labels = labels_from_split_csv(split_csv, split_name, relevance_column="label", embeddings_dir=embeddings_dir)

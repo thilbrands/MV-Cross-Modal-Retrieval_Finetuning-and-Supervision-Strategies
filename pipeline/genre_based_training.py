@@ -4,11 +4,14 @@ Run: DATASET_RUN_NAME oder neuester Run. Speichert in training_runs/<Datum_Uhrze
 """
 import json
 import os
+import random
 import sys
 from datetime import datetime
 from pathlib import Path
 
+import numpy as np
 import torch
+import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -25,6 +28,17 @@ def _env_int(name: str, default: int) -> int:
 def _env_float(name: str, default: float) -> float:
     v = os.environ.get(name)
     return float(v) if v is not None and v != "" else default
+
+
+def _set_seed(seed: int) -> None:
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+    if hasattr(torch.backends, "cudnn"):
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
 
 run_name = os.environ.get("DATASET_RUN_NAME") or config.get_latest_run_name()
 dataset_dir = config.DATASETS_ROOT / run_name
@@ -48,6 +62,8 @@ head_type = os.environ.get("HP_HEAD_TYPE", "linear")
 hidden_dim = _env_int("HP_HIDDEN_DIM", 256)
 num_epochs = _env_int("HP_MAX_EPOCHS", 20)
 patience = _env_int("HP_PATIENCE", 3)
+seed = _env_int("HP_SEED", 42)
+_set_seed(seed)
 
 train_ds = PairDataset("train", TRAIN_VAL_TEST_SPLIT_CSV, EMBEDDINGS_DIR, return_label=True)
 val_ds = PairDataset("val", TRAIN_VAL_TEST_SPLIT_CSV, EMBEDDINGS_DIR, return_label=True)
@@ -62,13 +78,15 @@ epochs_without_improvement = 0
 best_val = float("inf")
 print(f"Dataset-Run: {run_name} | Train: {len(train_ds)} | Val: {len(val_ds)} | Epochs: {num_epochs} | Device: {DEVICE}", flush=True)
 print(f"Training-Run: {training_run_dir}", flush=True)
-print(f"Hyperparams: lr={lr} temp={temp} out_dim={out_dim} head_type={head_type} hidden_dim={hidden_dim} batch_size={batch_size} patience={patience}", flush=True)
+print(f"Hyperparams: lr={lr} temp={temp} out_dim={out_dim} head_type={head_type} hidden_dim={hidden_dim} batch_size={batch_size} patience={patience} seed={seed}", flush=True)
 
 def genre_supcon_loss(v_proj, a_proj, labels, temp: float = 0.07):
     """
     Supervised Contrastive Loss über Genres, symmetrisch für V→A und A→V.
     Positive: alle Samples im Batch mit gleichem Label, Negative: Rest im Batch.
     """
+    v_proj = F.normalize(v_proj, p=2, dim=-1)
+    a_proj = F.normalize(a_proj, p=2, dim=-1)
     sim_va = v_proj @ a_proj.T  # [B, B]
     sim_av = sim_va.T
     bsz = v_proj.size(0)
@@ -151,6 +169,7 @@ meta = {
         "out_dim": out_dim,
         "head_type": head_type,
         "hidden_dim": hidden_dim,
+        "seed": seed,
     },
 }
 with open(training_run_dir / "meta_genre.json", "w", encoding="utf-8") as f:

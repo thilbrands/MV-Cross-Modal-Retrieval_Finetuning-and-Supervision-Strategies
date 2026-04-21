@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import List, Optional
 
 import torch
+import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -97,20 +98,22 @@ for v, a in test_loader:
     A_list.append(a)
 V = torch.cat(V_list, dim=0).to(DEVICE)
 A = torch.cat(A_list, dim=0).to(DEVICE)
+Vn = F.normalize(V, p=2, dim=-1)
+An = F.normalize(A, p=2, dim=-1)
 
 # Ähnlichkeitsmatrix: sim[i,j] = Video i vs Audio j
-sim_baseline = (V @ A.T).cpu()
+sim_baseline = (Vn @ An.T).cpu()
 with torch.no_grad():
     # Baseline: zufällig initialisierte Heads (gleiche Architektur wie trainiert, aber untrained)
     video_head_rand = ProjectionHead().to(DEVICE).eval()
     audio_head_rand = ProjectionHead().to(DEVICE).eval()
-    v_rand = video_head_rand(V)
-    a_rand = audio_head_rand(A)
+    v_rand = F.normalize(video_head_rand(V), p=2, dim=-1)
+    a_rand = F.normalize(audio_head_rand(A), p=2, dim=-1)
 
-    v_pair = video_head_pair(V)
-    a_pair = audio_head_pair(A)
-    v_genre = video_head_genre(V)
-    a_genre = audio_head_genre(A)
+    v_pair = F.normalize(video_head_pair(V), p=2, dim=-1)
+    a_pair = F.normalize(audio_head_pair(A), p=2, dim=-1)
+    v_genre = F.normalize(video_head_genre(V), p=2, dim=-1)
+    a_genre = F.normalize(audio_head_genre(A), p=2, dim=-1)
 sim_rand = (v_rand @ a_rand.T).cpu()
 sim_pair = (v_pair @ a_pair.T).cpu()
 sim_genre = (v_genre @ a_genre.T).cpu()
