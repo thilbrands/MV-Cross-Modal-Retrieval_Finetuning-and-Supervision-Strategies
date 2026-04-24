@@ -75,7 +75,8 @@ class RawAudioPairDataset(Dataset):
     def __getitem__(self, idx):
         _, v_path, a_path, label = self.samples[idx]
         v_t = torch.tensor(np.load(v_path), dtype=torch.float32)
-        a_t = torch.tensor(np.load(a_path), dtype=torch.float32)
+        a = np.load(a_path)[:160000]
+        a_t = torch.tensor(np.pad(a, (0, 160000 - len(a))), dtype=torch.float32)
         if self.return_label:
             return v_t, a_t, label
         return v_t, a_t
