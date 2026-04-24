@@ -25,6 +25,17 @@ def load_models(device=None):
     return clip_model, clip_preprocess, wav2clip_model, DEVICE
 
 
+def load_wav2clip_finetune(device=None):
+    """Lädt Wav2CLIP mit trainierbaren Gewichten (scenario='finetune')."""
+    from wav2clip import MODEL_URL
+    from wav2clip.model.encoder import ResNetExtractor
+    _device = device or DEVICE
+    checkpoint = torch.hub.load_state_dict_from_url(MODEL_URL, map_location=_device, progress=True)
+    model = ResNetExtractor(checkpoint=checkpoint, scenario="finetune", transform=True)
+    model.to(_device)
+    return model
+
+
 class ProjectionHead(nn.Module):
     """
     Projection-Head:

@@ -1,6 +1,8 @@
 """
-Pair-Dataset für Training/Evaluation: lädt Video- und Audio-Embeddings pro Split.
-Logik wie in den Notebooks (07_training, 09_evaluation): Split-CSV + EMBEDDINGS_DIR.
+Datasets für Training/Evaluation.
+
+PairDataset        — lädt pre-computed Video- und Audio-Embeddings (head-only Training)
+RawAudioPairDataset — lädt pre-computed Video-Embeddings + rohe Audiowaveforms (Audio-Encoder-Training)
 """
 import csv
 from pathlib import Path
@@ -41,4 +43,35 @@ class PairDataset(Dataset):
         a_t = torch.tensor(a, dtype=torch.float32)
         if self.return_label:
             return v_t, a_t, label
+        return v_t, a_t
+
+
+class RawAudioPairDataset(Dataset):
+    """
+    Lädt pre-computed Video-Embeddings + rohe Audiowaveforms pro Split.
+    Wird für das Audio-Encoder-Training verwendet.
+    """
+
+    def __init__(self, split_name: str, split_csv: Path, embeddings_dir: Path):
+        self.embeddings_dir = Path(embeddings_dir)
+        self.samples = []
+        with open(split_csv, "r", newline="", encoding="utf-8") as f:
+            for row in csv.DictReader(f):
+                if row.get("split", "").strip() != split_name:
+                    continue
+                video_id = row.get("video_id", "").strip()
+                if not video_id:
+                    continue
+                v_path = self.embeddings_dir / "video" / f"{video_id}.npy"
+                a_path = self.embeddings_dir / "audio_raw" / f"{video_id}.npy"
+                if v_path.exists() and a_path.exists():
+                    self.samples.append((video_id, v_path, a_path))
+
+    def __len__(self):
+        return len(self.samples)
+
+    def __getitem__(self, idx):
+        _, v_path, a_path = self.samples[idx]
+        v_t = torch.tensor(np.load(v_path), dtype=torch.float32)
+        a_t = torch.tensor(np.load(a_path), dtype=torch.float32)
         return v_t, a_t

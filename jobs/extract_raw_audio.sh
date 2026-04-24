@@ -1,0 +1,47 @@
+#!/bin/bash
+#
+# Slurm-Job: Einmalige Extraktion roher Audiowaveforms für Audio-Encoder-Training.
+# Kein GPU nötig.
+#
+# Nutzung:
+#   sbatch jobs/extract_raw_audio.sh
+#   sbatch --export=DATASET_RUN_NAME=2026-03-13_18-12-31_audioset jobs/extract_raw_audio.sh
+#
+
+#SBATCH --job-name=extract_raw_audio
+#SBATCH --partition=paula
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=8GB
+#SBATCH --time=0-02:00:00
+
+#SBATCH --output=/work2/ra39oxet-DatasetAudioSetSubset/logs/extract_raw_audio_%j.out
+#SBATCH --error=/work2/ra39oxet-DatasetAudioSetSubset/logs/extract_raw_audio_%j.err
+
+set -euo pipefail
+
+WORK_ROOT="/work2/ra39oxet-DatasetAudioSetSubset"
+mkdir -p "$WORK_ROOT/logs"
+
+REPO_ROOT="${SLURM_SUBMIT_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
+cd "$REPO_ROOT" || { echo "FEHLER: cd nach $REPO_ROOT fehlgeschlagen." >&2; exit 1; }
+
+module purge
+module load Python/3.11.5-GCCcore-13.2.0
+
+source "$HOME/venv/ba/bin/activate"
+
+export PYTHONUNBUFFERED=1
+
+if [[ -z "${DATASET_RUN_NAME:-}" ]]; then
+    DATASET_RUN_NAME="$(python3 -c "import sys; sys.path.insert(0,'.'); import config; print(config.get_latest_run_name() or '')")"
+    export DATASET_RUN_NAME
+fi
+if [[ -z "${DATASET_RUN_NAME:-}" ]]; then
+    echo "FEHLER: DATASET_RUN_NAME nicht gesetzt." >&2
+    exit 1
+fi
+
+echo "Hostname: $(hostname)"
+echo "DATASET_RUN_NAME: $DATASET_RUN_NAME"
+
+python3 "$REPO_ROOT/pipeline/extract_raw_audio.py"

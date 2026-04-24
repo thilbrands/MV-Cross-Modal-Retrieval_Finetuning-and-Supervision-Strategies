@@ -178,6 +178,9 @@ def process_one_video(
         audio_np, sr = extract_audio_pyav(mp4_path, target_sr=TARGET_SR)
         if audio_np is None or len(audio_np) == 0:
             return False, "audio"
+        audio_raw_out = audio_dir.parent / "audio_raw" / f"{video_id}.npy"
+        audio_raw_out.parent.mkdir(parents=True, exist_ok=True)
+        np.save(audio_raw_out, audio_np.astype(np.float32))
         audio_emb = audio_to_wav2clip_embedding(audio_np, wav2clip_model)
         audio_out.parent.mkdir(parents=True, exist_ok=True)
         np.save(audio_out, audio_emb.astype(np.float32))
