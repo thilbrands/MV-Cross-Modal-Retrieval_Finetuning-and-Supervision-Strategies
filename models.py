@@ -119,3 +119,28 @@ def load_projection_heads_genre(path=None, device=None):
     video_head.eval()
     audio_head.eval()
     return video_head, audio_head
+
+
+def load_audio_encoder_checkpoint(path, device=None):
+    """
+    Lädt einen Audio-Encoder-Checkpoint (wav2clip + heads).
+    Gibt (wav2clip_model, video_head, audio_head) zurück, alle im eval-Modus.
+    """
+    ckpt_path = Path(path)
+    if ckpt_path.is_dir():
+        for name in ("audio_encoder_pair.pt", "audio_encoder_genre.pt"):
+            if (ckpt_path / name).exists():
+                ckpt_path = ckpt_path / name
+                break
+    ckpt = torch.load(ckpt_path, map_location=DEVICE)
+    cfg = _infer_head_config_from_state_dict(ckpt["video_head"])
+    video_head = ProjectionHead(**cfg).to(DEVICE)
+    audio_head = ProjectionHead(**cfg).to(DEVICE)
+    video_head.load_state_dict(ckpt["video_head"])
+    audio_head.load_state_dict(ckpt["audio_head"])
+    video_head.eval()
+    audio_head.eval()
+    wav2clip_model = load_wav2clip_finetune(DEVICE)
+    wav2clip_model.load_state_dict(ckpt["wav2clip"])
+    wav2clip_model.eval()
+    return wav2clip_model, video_head, audio_head

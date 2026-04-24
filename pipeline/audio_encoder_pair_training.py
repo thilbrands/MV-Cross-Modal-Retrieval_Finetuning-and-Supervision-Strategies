@@ -1,0 +1,175 @@
+"""
+Pair-basiertes Training mit trainierbarem Audio-Encoder (Wav2CLIP unfrozen).
+Hyperparameter werden per Env-Variablen übergeben (aus dem Tuning).
+
+Unterschiede zu pair_based_training.py:
+- Lädt rohe Audiowaveforms statt pre-computed Audio-Embeddings
+- Wav2CLIP wird im Forward-Pass ausgeführt und mittrainiert
+- Differenzierte Learning Rates: HP_LR für Heads, HP_LR_ENCODER für Wav2CLIP
+- Checkpoint enthält zusätzlich Wav2CLIP weights
+"""
+import json
+import os
+import random
+import sys
+from datetime import datetime
+from pathlib import Path
+
+import numpy as np
+import torch
+import torch.nn.functional as F
+from torch.utils.data import DataLoader
+
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(_REPO_ROOT))
+import config
+from dataset import RawAudioPairDataset
+from models import ProjectionHead, load_wav2clip_finetune
+
+
+def _env_int(name: str, default: int) -> int:
+    v = os.environ.get(name)
+    return int(v) if v is not None and v != "" else default
+
+
+def _env_float(name: str, default: float) -> float:
+    v = os.environ.get(name)
+    return float(v) if v is not None and v != "" else default
+
+
+def _set_seed(seed: int) -> None:
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+    if hasattr(torch.backends, "cudnn"):
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+
+
+run_name = os.environ.get("DATASET_RUN_NAME") or config.get_latest_run_name()
+dataset_dir = config.DATASETS_ROOT / run_name
+EMBEDDINGS_DIR = dataset_dir / "embeddings"
+TRAIN_VAL_TEST_SPLIT_CSV = dataset_dir / "train_val_test_split.csv"
+DEVICE = config.DEVICE
+
+if os.environ.get("TRAINING_RUN_DIR"):
+    training_run_dir = Path(os.environ["TRAINING_RUN_DIR"])
+    training_run_dir.mkdir(parents=True, exist_ok=True)
+else:
+    training_run_dir = config.get_new_training_run_dir()
+CHECKPOINT_PATH = training_run_dir / "audio_encoder_pair.pt"
+
+batch_size = _env_int("HP_BATCH_SIZE", 64)
+lr = _env_float("HP_LR", 1e-3)
+lr_encoder = _env_float("HP_LR_ENCODER", lr / 10)
+temp = _env_float("HP_TEMP", 0.07)
+out_dim = _env_int("HP_OUT_DIM", 64)
+head_type = os.environ.get("HP_HEAD_TYPE", "linear")
+hidden_dim = _env_int("HP_HIDDEN_DIM", 256)
+num_epochs = _env_int("HP_MAX_EPOCHS", 20)
+patience = _env_int("HP_PATIENCE", 3)
+seed = _env_int("HP_SEED", 42)
+_set_seed(seed)
+
+train_ds = RawAudioPairDataset("train", TRAIN_VAL_TEST_SPLIT_CSV, EMBEDDINGS_DIR)
+val_ds = RawAudioPairDataset("val", TRAIN_VAL_TEST_SPLIT_CSV, EMBEDDINGS_DIR)
+train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=0)
+val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, num_workers=0)
+
+wav2clip_model = load_wav2clip_finetune(DEVICE)
+video_head = ProjectionHead(out_dim=out_dim, head_type=head_type, hidden_dim=hidden_dim).to(DEVICE)
+audio_head = ProjectionHead(out_dim=out_dim, head_type=head_type, hidden_dim=hidden_dim).to(DEVICE)
+
+opt = torch.optim.Adam([
+    {"params": list(video_head.parameters()) + list(audio_head.parameters()), "lr": lr},
+    {"params": wav2clip_model.parameters(), "lr": lr_encoder},
+])
+
+print(f"Dataset-Run: {run_name} | Train: {len(train_ds)} | Val: {len(val_ds)} | Epochs: {num_epochs} | Device: {DEVICE}", flush=True)
+print(f"Training-Run: {training_run_dir}", flush=True)
+print(f"Hyperparams: lr={lr} lr_encoder={lr_encoder} temp={temp} out_dim={out_dim} head_type={head_type} hidden_dim={hidden_dim} batch_size={batch_size} patience={patience} seed={seed}", flush=True)
+
+
+def infonce_loss(v_proj, a_proj, temp=0.07):
+    v_proj = F.normalize(v_proj, p=2, dim=-1)
+    a_proj = F.normalize(a_proj, p=2, dim=-1)
+    logits = (v_proj @ a_proj.T) / temp
+    labels = torch.arange(v_proj.size(0), device=v_proj.device)
+    return torch.nn.functional.cross_entropy(logits, labels)
+
+
+epochs_without_improvement = 0
+best_val = float("inf")
+
+for epoch in range(num_epochs):
+    video_head.train()
+    audio_head.train()
+    wav2clip_model.train()
+    train_loss = 0.0
+    for v, a in train_loader:
+        v, a = v.to(DEVICE), a.to(DEVICE)
+        opt.zero_grad()
+        a_emb = wav2clip_model(a)
+        vp, ap = video_head(v), audio_head(a_emb)
+        loss = infonce_loss(vp, ap, temp=temp)
+        loss.backward()
+        opt.step()
+        train_loss += loss.item() * v.size(0)
+    train_loss /= len(train_ds)
+
+    video_head.eval()
+    audio_head.eval()
+    wav2clip_model.eval()
+    val_loss = 0.0
+    with torch.no_grad():
+        for v, a in val_loader:
+            v, a = v.to(DEVICE), a.to(DEVICE)
+            a_emb = wav2clip_model(a)
+            vp, ap = video_head(v), audio_head(a_emb)
+            val_loss += infonce_loss(vp, ap, temp=temp).item() * v.size(0)
+    val_loss /= len(val_ds)
+
+    if val_loss < best_val:
+        best_val = val_loss
+        epochs_without_improvement = 0
+        torch.save(
+            {
+                "video_head": video_head.state_dict(),
+                "audio_head": audio_head.state_dict(),
+                "wav2clip": wav2clip_model.state_dict(),
+                "encoder_finetuned": True,
+            },
+            CHECKPOINT_PATH,
+        )
+    else:
+        epochs_without_improvement += 1
+    print(f"Epoch {epoch+1}/{num_epochs}  train={train_loss:.4f}  val={val_loss:.4f}  best_val={best_val:.4f}", flush=True)
+    if epochs_without_improvement >= patience:
+        print(f"Early stopping at epoch {epoch+1} (patience={patience}).", flush=True)
+        break
+
+meta = {
+    "timestamp": datetime.now().isoformat(),
+    "dataset_run": run_name,
+    "git_commit": config.get_git_commit(),
+    "training_type": "audio_encoder_pair",
+    "hyperparams": {
+        "max_epochs": num_epochs,
+        "patience": patience,
+        "lr": lr,
+        "lr_encoder": lr_encoder,
+        "batch_size": batch_size,
+        "temp": temp,
+        "out_dim": out_dim,
+        "head_type": head_type,
+        "hidden_dim": hidden_dim,
+        "seed": seed,
+    },
+}
+meta_file = "meta_audio_encoder_pair.json" if os.environ.get("TRAINING_RUN_DIR") else "meta.json"
+with open(training_run_dir / meta_file, "w", encoding="utf-8") as f:
+    json.dump(meta, f, indent=2)
+
+print(f"Gespeichert: {CHECKPOINT_PATH}", flush=True)

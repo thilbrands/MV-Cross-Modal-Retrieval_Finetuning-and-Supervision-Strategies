@@ -1,8 +1,8 @@
 #!/bin/bash
 #
-# Training + Evaluation: Pair-Training → Genre-Training → Evaluation.
-# Erstellt einen gemeinsamen Ordner training_runs/<Datum_Uhrzeit>/; alle drei
-# Schritte speichern darin (Heads, Meta, Evaluation-Ausgabe).
+# Training + Evaluation: Pair → Genre → Audio-Encoder Pair → Audio-Encoder Genre → Evaluation.
+# Erstellt einen gemeinsamen Ordner training_runs/<Datum_Uhrzeit>/; alle Schritte
+# speichern darin (Heads, Meta, Evaluation-Ausgabe).
 #
 # Nutzung (vom Repo-Root auf dem Cluster):
 #   bash run_train_and_eval.sh
@@ -49,17 +49,39 @@ while squeue -j "$JOB2" 2>/dev/null | grep -q "$JOB2"; do sleep 60; done
 echo "Genre-Training beendet."
 
 echo ""
-echo "========== 3/3 Evaluation =========="
+echo "========== 3/4 Audio-Encoder Pair-Training =========="
 JOB3=$(sbatch --parsable --export=DATASET_RUN_NAME,TRAINING_RUN_DIR \
-  --output="$TRAINING_RUN_DIR/evaluation.out" --error="$TRAINING_RUN_DIR/evaluation.err" \
-  jobs/evaluation.sh)
+  --output="$TRAINING_RUN_DIR/ae_pair_training.out" --error="$TRAINING_RUN_DIR/ae_pair_training.err" \
+  jobs/audio_encoder_pair_training.sh)
 echo "Job gestartet: $JOB3"
 echo "Warte auf Abschluss …"
 while squeue -j "$JOB3" 2>/dev/null | grep -q "$JOB3"; do sleep 60; done
+echo "Audio-Encoder Pair-Training beendet."
+
+echo ""
+echo "========== 4/4 Audio-Encoder Genre-Training =========="
+JOB4=$(sbatch --parsable --export=DATASET_RUN_NAME,TRAINING_RUN_DIR \
+  --output="$TRAINING_RUN_DIR/ae_genre_training.out" --error="$TRAINING_RUN_DIR/ae_genre_training.err" \
+  jobs/audio_encoder_genre_training.sh)
+echo "Job gestartet: $JOB4"
+echo "Warte auf Abschluss …"
+while squeue -j "$JOB4" 2>/dev/null | grep -q "$JOB4"; do sleep 60; done
+echo "Audio-Encoder Genre-Training beendet."
+
+echo ""
+echo "========== 5/5 Evaluation =========="
+export AE_PAIR_RUN_DIR="$TRAINING_RUN_DIR"
+export AE_GENRE_RUN_DIR="$TRAINING_RUN_DIR"
+JOB5=$(sbatch --parsable --export=DATASET_RUN_NAME,TRAINING_RUN_DIR,AE_PAIR_RUN_DIR,AE_GENRE_RUN_DIR \
+  --output="$TRAINING_RUN_DIR/evaluation.out" --error="$TRAINING_RUN_DIR/evaluation.err" \
+  jobs/evaluation.sh)
+echo "Job gestartet: $JOB5"
+echo "Warte auf Abschluss …"
+while squeue -j "$JOB5" 2>/dev/null | grep -q "$JOB5"; do sleep 60; done
 echo "Evaluation beendet."
 
 echo ""
 echo "========== Train+Eval-Pipeline fertig =========="
 echo "Dataset-Run: $DATASET_RUN_NAME"
 echo "Alles in einem Ordner: $TRAINING_RUN_DIR"
-echo "  (projection_heads_*.pt, meta_*.json, training_*.out/.err, evaluation.out/.err, evaluation_output.txt)"
+echo "  (projection_heads_*.pt, audio_encoder_*.pt, meta_*.json, *.out/.err, evaluation_output.txt)"

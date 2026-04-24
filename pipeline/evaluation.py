@@ -15,8 +15,8 @@ from torch.utils.data import DataLoader
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_REPO_ROOT))
 import config
-from dataset import PairDataset
-from models import ProjectionHead, load_projection_heads, load_projection_heads_genre
+from dataset import PairDataset, RawAudioPairDataset
+from models import ProjectionHead, load_projection_heads, load_projection_heads_genre, load_audio_encoder_checkpoint
 from metrics import (
     MRR,
     recall_at_k,
@@ -49,6 +49,10 @@ else:
     pair_path = pair_run_dir if pair_run_dir else None
     genre_path = genre_run_dir if genre_run_dir else None
 
+# Audio-Encoder-Checkpoints (optional)
+ae_pair_path = Path(os.environ["AE_PAIR_RUN_DIR"]) if os.environ.get("AE_PAIR_RUN_DIR") else config.get_latest_training_run_with("audio_encoder_pair.pt")
+ae_genre_path = Path(os.environ["AE_GENRE_RUN_DIR"]) if os.environ.get("AE_GENRE_RUN_DIR") else config.get_latest_training_run_with("audio_encoder_genre.pt")
+
 
 def _meta_commit(run_dir: Optional[Path], meta_name: str = "meta.json") -> str:
     if run_dir is None:
@@ -79,11 +83,15 @@ _out(f"Git-Commit (Eval): {config.get_git_commit()}")
 _out(f"Dataset-Run: {run_name}")
 _out(f"Pair-based Head: {pair_path or config.PROJECTION_HEADS_PATH} (train commit: {_meta_commit(pair_run_dir, 'meta_pair.json') or '-'})")
 _out(f"Genre-based Head: {genre_path or config.PROJECTION_HEADS_GENRE_PATH} (train commit: {_meta_commit(genre_run_dir, 'meta_genre.json') or '-'})")
+_out(f"Audio-Encoder Pair: {ae_pair_path or '-'}")
+_out(f"Audio-Encoder Genre: {ae_genre_path or '-'}")
 
 test_ds = PairDataset("test", TRAIN_VAL_TEST_SPLIT_CSV, EMBEDDINGS_DIR)
 test_loader = DataLoader(test_ds, batch_size=32, shuffle=False, num_workers=0)
 video_head_pair, audio_head_pair = load_projection_heads(pair_path)
 video_head_genre, audio_head_genre = load_projection_heads_genre(genre_path)
+wav2clip_ae_pair, video_head_ae_pair, audio_head_ae_pair = load_audio_encoder_checkpoint(ae_pair_path)
+wav2clip_ae_genre, video_head_ae_genre, audio_head_ae_genre = load_audio_encoder_checkpoint(ae_genre_path)
 
 # Relevanz = Genre-Tag (Spalte "label"), gleiche Reihenfolge wie test_ds
 labels = labels_from_split_csv(
@@ -91,7 +99,7 @@ labels = labels_from_split_csv(
 )
 _out("Labels shape: " + str(labels.shape))
 
-# Test-Embeddings laden (V = Video, A = Audio)
+# Pre-computed Embeddings (für head-only Modelle)
 V_list, A_list = [], []
 for v, a in test_loader:
     V_list.append(v)
@@ -101,10 +109,17 @@ A = torch.cat(A_list, dim=0).to(DEVICE)
 Vn = F.normalize(V, p=2, dim=-1)
 An = F.normalize(A, p=2, dim=-1)
 
-# Ähnlichkeitsmatrix: sim[i,j] = Video i vs Audio j
+# Rohe Audiowaveforms (für Audio-Encoder-Modelle)
+raw_test_ds = RawAudioPairDataset("test", TRAIN_VAL_TEST_SPLIT_CSV, EMBEDDINGS_DIR)
+raw_loader = DataLoader(raw_test_ds, batch_size=32, shuffle=False, num_workers=0)
+RAW_A_list = []
+for _, a in raw_loader:
+    RAW_A_list.append(a)
+RAW_A = torch.cat(RAW_A_list, dim=0).to(DEVICE)
+
+# Ähnlichkeitsmatrizen
 sim_baseline = (Vn @ An.T).cpu()
 with torch.no_grad():
-    # Baseline: zufällig initialisierte Heads (gleiche Architektur wie trainiert, aber untrained)
     video_head_rand = ProjectionHead().to(DEVICE).eval()
     audio_head_rand = ProjectionHead().to(DEVICE).eval()
     v_rand = F.normalize(video_head_rand(V), p=2, dim=-1)
@@ -114,20 +129,23 @@ with torch.no_grad():
     a_pair = F.normalize(audio_head_pair(A), p=2, dim=-1)
     v_genre = F.normalize(video_head_genre(V), p=2, dim=-1)
     a_genre = F.normalize(audio_head_genre(A), p=2, dim=-1)
+
+    a_emb_ae_pair = wav2clip_ae_pair(RAW_A)
+    v_ae_pair = F.normalize(video_head_ae_pair(V), p=2, dim=-1)
+    a_ae_pair = F.normalize(audio_head_ae_pair(a_emb_ae_pair), p=2, dim=-1)
+
+    a_emb_ae_genre = wav2clip_ae_genre(RAW_A)
+    v_ae_genre = F.normalize(video_head_ae_genre(V), p=2, dim=-1)
+    a_ae_genre = F.normalize(audio_head_ae_genre(a_emb_ae_genre), p=2, dim=-1)
+
 sim_rand = (v_rand @ a_rand.T).cpu()
 sim_pair = (v_pair @ a_pair.T).cpu()
 sim_genre = (v_genre @ a_genre.T).cpu()
+sim_ae_pair = (v_ae_pair @ a_ae_pair.T).cpu()
+sim_ae_genre = (v_ae_genre @ a_ae_genre.T).cpu()
 
-# Zwei Relevanz-Protokolle:
-# 1) Pair-basiert: nur exaktes Gegenstück (Diagonale)
-# 2) Label-basiert: gleiches Genre
 rel_pair = pair_relevance_matrix(sim_baseline.size(0))
 rel_label = label_relevance_matrix(labels)
-
-_out("sim_baseline shape: " + str(sim_baseline.shape))
-_out("sim_rand (untrained heads) shape: " + str(sim_rand.shape))
-_out("sim_pair shape: " + str(sim_pair.shape))
-_out("sim_genre shape: " + str(sim_genre.shape))
 
 
 def print_metrics(name, sim, relevance):
@@ -147,12 +165,16 @@ print_metrics("Baseline", sim_baseline, rel_pair)
 print_metrics("Untrained heads", sim_rand, rel_pair)
 print_metrics("Pair-based", sim_pair, rel_pair)
 print_metrics("Genre-based", sim_genre, rel_pair)
+print_metrics("Audio-Encoder Pair", sim_ae_pair, rel_pair)
+print_metrics("Audio-Encoder Genre", sim_ae_genre, rel_pair)
 _out("")
 _out("=== A→V (Audio als Query, Video retrieval) ===")
 print_metrics("Baseline", sim_baseline.T, rel_pair.T)
 print_metrics("Untrained heads", sim_rand.T, rel_pair.T)
 print_metrics("Pair-based", sim_pair.T, rel_pair.T)
 print_metrics("Genre-based", sim_genre.T, rel_pair.T)
+print_metrics("Audio-Encoder Pair", sim_ae_pair.T, rel_pair.T)
+print_metrics("Audio-Encoder Genre", sim_ae_genre.T, rel_pair.T)
 _out("")
 _out("=== Protokoll B: Label-basierte Relevanz (gleiches Genre) ===")
 _out("=== V→A (Video als Query, Audio retrieval) ===")
@@ -160,12 +182,16 @@ print_metrics("Baseline", sim_baseline, rel_label)
 print_metrics("Untrained heads", sim_rand, rel_label)
 print_metrics("Pair-based", sim_pair, rel_label)
 print_metrics("Genre-based", sim_genre, rel_label)
+print_metrics("Audio-Encoder Pair", sim_ae_pair, rel_label)
+print_metrics("Audio-Encoder Genre", sim_ae_genre, rel_label)
 _out("")
 _out("=== A→V (Audio als Query, Video retrieval) ===")
 print_metrics("Baseline", sim_baseline.T, rel_label.T)
 print_metrics("Untrained heads", sim_rand.T, rel_label.T)
 print_metrics("Pair-based", sim_pair.T, rel_label.T)
 print_metrics("Genre-based", sim_genre.T, rel_label.T)
+print_metrics("Audio-Encoder Pair", sim_ae_pair.T, rel_label.T)
+print_metrics("Audio-Encoder Genre", sim_ae_genre.T, rel_label.T)
 
 # Bei Pipeline: Evaluation-Ausgabe in denselben Run-Ordner schreiben
 if os.environ.get("TRAINING_RUN_DIR"):
