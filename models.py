@@ -93,9 +93,7 @@ def _infer_head_config_from_state_dict(state_dict):
     raise ValueError("Konnte Head-Architektur aus Checkpoint nicht ableiten.")
 
 
-def load_projection_heads(path=None, device=None):
-    """Lädt Pair-Heads aus path (Ordner/Datei) oder PROJECTION_HEADS_PATH. Gibt (video_head, audio_head) zurück."""
-    ckpt_path = _checkpoint_path(path, PROJECTION_HEADS_PATH, "projection_heads_pair.pt")
+def _load_heads(ckpt_path: Path):
     ckpt = torch.load(ckpt_path, map_location=DEVICE)
     cfg = _infer_head_config_from_state_dict(ckpt["video_head"])
     video_head = ProjectionHead(**cfg).to(DEVICE)
@@ -105,42 +103,23 @@ def load_projection_heads(path=None, device=None):
     video_head.eval()
     audio_head.eval()
     return video_head, audio_head
+
+
+def load_projection_heads_pair(path=None, device=None):
+    """Lädt Pair-Heads aus path (Ordner/Datei) oder PROJECTION_HEADS_PATH. Gibt (video_head, audio_head) zurück."""
+    return _load_heads(_checkpoint_path(path, PROJECTION_HEADS_PATH, "projection_heads_pair.pt"))
 
 
 def load_projection_heads_genre(path=None, device=None):
     """Lädt Genre-Heads aus path (Ordner/Datei) oder PROJECTION_HEADS_GENRE_PATH. Gibt (video_head, audio_head) zurück."""
-    ckpt_path = _checkpoint_path(path, PROJECTION_HEADS_GENRE_PATH, "projection_heads_genre.pt")
-    ckpt = torch.load(ckpt_path, map_location=DEVICE)
-    cfg = _infer_head_config_from_state_dict(ckpt["video_head"])
-    video_head = ProjectionHead(**cfg).to(DEVICE)
-    audio_head = ProjectionHead(**cfg).to(DEVICE)
-    video_head.load_state_dict(ckpt["video_head"])
-    audio_head.load_state_dict(ckpt["audio_head"])
-    video_head.eval()
-    audio_head.eval()
-    return video_head, audio_head
+    return _load_heads(_checkpoint_path(path, PROJECTION_HEADS_GENRE_PATH, "projection_heads_genre.pt"))
 
 
-def load_audio_encoder_checkpoint(path, device=None):
-    """
-    Lädt einen Audio-Encoder-Checkpoint (wav2clip + heads).
-    Gibt (wav2clip_model, video_head, audio_head) zurück, alle im eval-Modus.
-    """
-    ckpt_path = Path(path)
-    if ckpt_path.is_dir():
-        for name in ("audio_encoder_pair.pt", "audio_encoder_genre.pt"):
-            if (ckpt_path / name).exists():
-                ckpt_path = ckpt_path / name
-                break
-    ckpt = torch.load(ckpt_path, map_location=DEVICE)
-    cfg = _infer_head_config_from_state_dict(ckpt["video_head"])
-    video_head = ProjectionHead(**cfg).to(DEVICE)
-    audio_head = ProjectionHead(**cfg).to(DEVICE)
-    video_head.load_state_dict(ckpt["video_head"])
-    audio_head.load_state_dict(ckpt["audio_head"])
-    video_head.eval()
-    audio_head.eval()
-    wav2clip_model = load_wav2clip_finetune(DEVICE)
-    wav2clip_model.load_state_dict(ckpt["wav2clip"])
-    wav2clip_model.eval()
-    return wav2clip_model, video_head, audio_head
+def load_audio_encoder_heads_pair(path, device=None):
+    """Lädt Heads aus einem Pair-Audio-Encoder-Checkpoint. Gibt (video_head, audio_head) zurück."""
+    return _load_heads(_checkpoint_path(path, None, "audio_encoder_pair.pt"))
+
+
+def load_audio_encoder_heads_genre(path, device=None):
+    """Lädt Heads aus einem Genre-Audio-Encoder-Checkpoint. Gibt (video_head, audio_head) zurück."""
+    return _load_heads(_checkpoint_path(path, None, "audio_encoder_genre.pt"))

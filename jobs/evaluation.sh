@@ -11,7 +11,7 @@
 #SBATCH --job-name=evaluation
 #SBATCH --partition=paula
 #SBATCH --cpus-per-task=4
-#SBATCH --mem=8GB
+#SBATCH --mem=24GB
 #SBATCH --time=0-1:00:00
 
 #SBATCH --output=/work2/ra39oxet-DatasetAudioSetSubset/logs/evaluation_%j.out

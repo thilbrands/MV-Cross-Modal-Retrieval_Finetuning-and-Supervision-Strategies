@@ -54,7 +54,7 @@ else:
     training_run_dir = config.get_new_training_run_dir()
 CHECKPOINT_PATH = training_run_dir / "projection_heads_genre.pt"
 
-batch_size = _env_int("HP_BATCH_SIZE", 64)
+batch_size = _env_int("HP_BATCH_SIZE", 128)
 lr = _env_float("HP_LR", 1e-3)
 temp = _env_float("HP_TEMP", 0.07)
 out_dim = _env_int("HP_OUT_DIM", 64)

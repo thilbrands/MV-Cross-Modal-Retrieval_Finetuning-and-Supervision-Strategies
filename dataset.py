@@ -52,9 +52,10 @@ class RawAudioPairDataset(Dataset):
     Wird für das Audio-Encoder-Training verwendet.
     """
 
-    def __init__(self, split_name: str, split_csv: Path, embeddings_dir: Path, return_label: bool = False):
+    def __init__(self, split_name: str, split_csv: Path, embeddings_dir: Path, return_label: bool = False, return_video_id: bool = False):
         self.embeddings_dir = Path(embeddings_dir)
         self.return_label = return_label
+        self.return_video_id = return_video_id
         self.samples = []
         with open(split_csv, "r", newline="", encoding="utf-8") as f:
             for row in csv.DictReader(f):
@@ -73,10 +74,12 @@ class RawAudioPairDataset(Dataset):
         return len(self.samples)
 
     def __getitem__(self, idx):
-        _, v_path, a_path, label = self.samples[idx]
+        video_id, v_path, a_path, label = self.samples[idx]
         v_t = torch.tensor(np.load(v_path), dtype=torch.float32)
         a = np.load(a_path)[:160000]
         a_t = torch.tensor(np.pad(a, (0, 160000 - len(a))), dtype=torch.float32)
+        if self.return_video_id:
+            return video_id, v_t, a_t
         if self.return_label:
             return v_t, a_t, label
         return v_t, a_t

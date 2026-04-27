@@ -61,11 +61,11 @@ else:
     training_run_dir = config.get_new_training_run_dir()
 CHECKPOINT_PATH = training_run_dir / "audio_encoder_pair.pt"
 
-batch_size = _env_int("HP_BATCH_SIZE", 64)
-lr = _env_float("HP_LR", 1e-3)
+batch_size = _env_int("HP_BATCH_SIZE", 256)
+lr = _env_float("HP_LR", 1e-4)
 lr_encoder = _env_float("HP_LR_ENCODER", lr / 10)
-temp = _env_float("HP_TEMP", 0.07)
-out_dim = _env_int("HP_OUT_DIM", 64)
+temp = _env_float("HP_TEMP", 0.1)
+out_dim = _env_int("HP_OUT_DIM", 128)
 head_type = os.environ.get("HP_HEAD_TYPE", "linear")
 hidden_dim = _env_int("HP_HIDDEN_DIM", 256)
 num_epochs = _env_int("HP_MAX_EPOCHS", 20)
@@ -98,7 +98,7 @@ def infonce_loss(v_proj, a_proj, temp=0.07):
     logits = (v_proj @ a_proj.T) / temp
     labels = torch.arange(v_proj.size(0), device=v_proj.device)
     return torch.nn.functional.cross_entropy(logits, labels)
-
+a
 
 epochs_without_improvement = 0
 best_val = float("inf")
@@ -173,3 +173,18 @@ with open(training_run_dir / meta_file, "w", encoding="utf-8") as f:
     json.dump(meta, f, indent=2)
 
 print(f"Gespeichert: {CHECKPOINT_PATH}", flush=True)
+
+print("Berechne Test-Embeddings …", flush=True)
+ckpt = torch.load(CHECKPOINT_PATH, map_location=DEVICE)
+wav2clip_model.load_state_dict(ckpt["wav2clip"])
+wav2clip_model.eval()
+test_ds = RawAudioPairDataset("test", TRAIN_VAL_TEST_SPLIT_CSV, EMBEDDINGS_DIR, return_video_id=True)
+test_embed_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=0)
+ae_emb_dir = training_run_dir / "audio_encoder_test_embeddings"
+ae_emb_dir.mkdir(exist_ok=True)
+with torch.no_grad():
+    for video_ids, _, a_t in test_embed_loader:
+        embs = wav2clip_model(a_t.to(DEVICE)).cpu().numpy()
+        for video_id, emb in zip(video_ids, embs):
+            np.save(ae_emb_dir / f"{video_id}.npy", emb)
+print(f"Test-Embeddings: {ae_emb_dir} ({len(test_ds.samples)} Dateien)", flush=True)

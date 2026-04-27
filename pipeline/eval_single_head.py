@@ -17,7 +17,7 @@ sys.path.insert(0, str(_REPO_ROOT))
 import config
 from dataset import PairDataset
 from metrics import recall_at_k, labels_from_split_csv, label_relevance_matrix, pair_relevance_matrix
-from models import load_projection_heads, load_projection_heads_genre
+from models import load_projection_heads_pair, load_projection_heads_genre
 
 
 def _avg_bidir(metric_fn, sim: torch.Tensor, rel: torch.Tensor):
@@ -48,7 +48,7 @@ def main():
     ds = PairDataset(split_name, split_csv, embeddings_dir)
     loader = DataLoader(ds, batch_size=64, shuffle=False, num_workers=0)
     if training_type == "pair":
-        video_head, audio_head = load_projection_heads(model_path)
+        video_head, audio_head = load_projection_heads_pair(model_path)
     else:
         video_head, audio_head = load_projection_heads_genre(model_path)
 

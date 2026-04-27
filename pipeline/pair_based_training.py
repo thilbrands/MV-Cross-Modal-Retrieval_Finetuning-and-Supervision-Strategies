@@ -54,10 +54,10 @@ else:
     training_run_dir = config.get_new_training_run_dir()
 CHECKPOINT_PATH = training_run_dir / "projection_heads_pair.pt"
 
-batch_size = _env_int("HP_BATCH_SIZE", 64)
-lr = _env_float("HP_LR", 1e-3)
-temp = _env_float("HP_TEMP", 0.07)
-out_dim = _env_int("HP_OUT_DIM", 64)
+batch_size = _env_int("HP_BATCH_SIZE", 256)
+lr = _env_float("HP_LR", 1e-4)
+temp = _env_float("HP_TEMP", 0.1)
+out_dim = _env_int("HP_OUT_DIM", 128)
 head_type = os.environ.get("HP_HEAD_TYPE", "linear")
 hidden_dim = _env_int("HP_HIDDEN_DIM", 256)
 num_epochs = _env_int("HP_MAX_EPOCHS", 20)

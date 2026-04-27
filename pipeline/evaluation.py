@@ -8,6 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 
+import numpy as np
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
@@ -15,8 +16,8 @@ from torch.utils.data import DataLoader
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_REPO_ROOT))
 import config
-from dataset import PairDataset, RawAudioPairDataset
-from models import ProjectionHead, load_projection_heads, load_projection_heads_genre, load_audio_encoder_checkpoint
+from dataset import PairDataset
+from models import ProjectionHead, load_projection_heads_pair, load_projection_heads_genre, load_audio_encoder_heads_pair, load_audio_encoder_heads_genre
 from metrics import (
     MRR,
     recall_at_k,
@@ -88,10 +89,10 @@ _out(f"Audio-Encoder Genre: {ae_genre_path or '-'}")
 
 test_ds = PairDataset("test", TRAIN_VAL_TEST_SPLIT_CSV, EMBEDDINGS_DIR)
 test_loader = DataLoader(test_ds, batch_size=32, shuffle=False, num_workers=0)
-video_head_pair, audio_head_pair = load_projection_heads(pair_path)
+video_head_pair, audio_head_pair = load_projection_heads_pair(pair_path)
 video_head_genre, audio_head_genre = load_projection_heads_genre(genre_path)
-wav2clip_ae_pair, video_head_ae_pair, audio_head_ae_pair = load_audio_encoder_checkpoint(ae_pair_path)
-wav2clip_ae_genre, video_head_ae_genre, audio_head_ae_genre = load_audio_encoder_checkpoint(ae_genre_path)
+video_head_ae_pair, audio_head_ae_pair = load_audio_encoder_heads_pair(ae_pair_path)
+video_head_ae_genre, audio_head_ae_genre = load_audio_encoder_heads_genre(ae_genre_path)
 
 # Relevanz = Genre-Tag (Spalte "label"), gleiche Reihenfolge wie test_ds
 labels = labels_from_split_csv(
@@ -109,13 +110,14 @@ A = torch.cat(A_list, dim=0).to(DEVICE)
 Vn = F.normalize(V, p=2, dim=-1)
 An = F.normalize(A, p=2, dim=-1)
 
-# Rohe Audiowaveforms (für Audio-Encoder-Modelle)
-raw_test_ds = RawAudioPairDataset("test", TRAIN_VAL_TEST_SPLIT_CSV, EMBEDDINGS_DIR)
-raw_loader = DataLoader(raw_test_ds, batch_size=32, shuffle=False, num_workers=0)
-RAW_A_list = []
-for _, a in raw_loader:
-    RAW_A_list.append(a)
-RAW_A = torch.cat(RAW_A_list, dim=0).to(DEVICE)
+# Pre-computed Audio-Encoder-Embeddings laden (in gleicher Reihenfolge wie test_ds)
+def _load_ae_embeddings(run_path, samples):
+    emb_dir = run_path / "audio_encoder_test_embeddings"
+    embs = [torch.tensor(np.load(emb_dir / f"{video_id}.npy"), dtype=torch.float32) for video_id, *_ in samples]
+    return torch.stack(embs).to(DEVICE)
+
+A_ae_pair = _load_ae_embeddings(ae_pair_path, test_ds.samples) if ae_pair_path else None
+A_ae_genre = _load_ae_embeddings(ae_genre_path, test_ds.samples) if ae_genre_path else None
 
 # Ähnlichkeitsmatrizen
 sim_baseline = (Vn @ An.T).cpu()
@@ -130,13 +132,11 @@ with torch.no_grad():
     v_genre = F.normalize(video_head_genre(V), p=2, dim=-1)
     a_genre = F.normalize(audio_head_genre(A), p=2, dim=-1)
 
-    a_emb_ae_pair = wav2clip_ae_pair(RAW_A)
     v_ae_pair = F.normalize(video_head_ae_pair(V), p=2, dim=-1)
-    a_ae_pair = F.normalize(audio_head_ae_pair(a_emb_ae_pair), p=2, dim=-1)
+    a_ae_pair = F.normalize(audio_head_ae_pair(A_ae_pair), p=2, dim=-1)
 
-    a_emb_ae_genre = wav2clip_ae_genre(RAW_A)
     v_ae_genre = F.normalize(video_head_ae_genre(V), p=2, dim=-1)
-    a_ae_genre = F.normalize(audio_head_ae_genre(a_emb_ae_genre), p=2, dim=-1)
+    a_ae_genre = F.normalize(audio_head_ae_genre(A_ae_genre), p=2, dim=-1)
 
 sim_rand = (v_rand @ a_rand.T).cpu()
 sim_pair = (v_pair @ a_pair.T).cpu()
