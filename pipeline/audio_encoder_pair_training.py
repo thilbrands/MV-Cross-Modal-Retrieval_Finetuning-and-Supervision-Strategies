@@ -98,7 +98,6 @@ def infonce_loss(v_proj, a_proj, temp=0.07):
     logits = (v_proj @ a_proj.T) / temp
     labels = torch.arange(v_proj.size(0), device=v_proj.device)
     return torch.nn.functional.cross_entropy(logits, labels)
-a
 
 epochs_without_improvement = 0
 best_val = float("inf")
