@@ -29,7 +29,7 @@ echo "Dataset-Run: $DATASET_RUN_NAME"
 echo "Training-Run (alle Ausgaben): $TRAINING_RUN_DIR"
 echo ""
 
-echo "========== 1/3 Pair-basiertes Training =========="
+echo "========== 1/5 Pair-basiertes Training =========="
 JOB1=$(sbatch --parsable --export=DATASET_RUN_NAME,TRAINING_RUN_DIR \
   --output="$TRAINING_RUN_DIR/training_pair.out" --error="$TRAINING_RUN_DIR/training_pair.err" \
   jobs/pair_based_training.sh)
@@ -39,7 +39,7 @@ while squeue -j "$JOB1" 2>/dev/null | grep -q "$JOB1"; do sleep 60; done
 echo "Pair-Training beendet."
 
 echo ""
-echo "========== 2/3 Genre-basiertes Training =========="
+echo "========== 2/5 Genre-basiertes Training =========="
 JOB2=$(sbatch --parsable --export=DATASET_RUN_NAME,TRAINING_RUN_DIR \
   --output="$TRAINING_RUN_DIR/training_genre.out" --error="$TRAINING_RUN_DIR/training_genre.err" \
   jobs/genre_based_training.sh)
@@ -49,7 +49,7 @@ while squeue -j "$JOB2" 2>/dev/null | grep -q "$JOB2"; do sleep 60; done
 echo "Genre-Training beendet."
 
 echo ""
-echo "========== 3/4 Audio-Encoder Pair-Training =========="
+echo "========== 3/5 Audio-Encoder Pair-Training =========="
 JOB3=$(sbatch --parsable --export=DATASET_RUN_NAME,TRAINING_RUN_DIR \
   --output="$TRAINING_RUN_DIR/ae_pair_training.out" --error="$TRAINING_RUN_DIR/ae_pair_training.err" \
   jobs/audio_encoder_pair_training.sh)
@@ -59,7 +59,7 @@ while squeue -j "$JOB3" 2>/dev/null | grep -q "$JOB3"; do sleep 60; done
 echo "Audio-Encoder Pair-Training beendet."
 
 echo ""
-echo "========== 4/4 Audio-Encoder Genre-Training =========="
+echo "========== 4/5 Audio-Encoder Genre-Training =========="
 JOB4=$(sbatch --parsable --export=DATASET_RUN_NAME,TRAINING_RUN_DIR \
   --output="$TRAINING_RUN_DIR/ae_genre_training.out" --error="$TRAINING_RUN_DIR/ae_genre_training.err" \
   jobs/audio_encoder_genre_training.sh)
