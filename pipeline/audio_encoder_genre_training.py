@@ -61,12 +61,12 @@ else:
     training_run_dir = config.get_new_training_run_dir()
 CHECKPOINT_PATH = training_run_dir / "audio_encoder_genre.pt"
 
-batch_size = _env_int("HP_BATCH_SIZE", 128)
+batch_size = _env_int("HP_BATCH_SIZE", 64)
 lr = _env_float("HP_LR", 1e-3)
 lr_encoder = _env_float("HP_LR_ENCODER", lr / 10)
-temp = _env_float("HP_TEMP", 0.07)
+temp = _env_float("HP_TEMP", 0.3)
 out_dim = _env_int("HP_OUT_DIM", 64)
-head_type = os.environ.get("HP_HEAD_TYPE", "linear")
+head_type = os.environ.get("HP_HEAD_TYPE", "mlp")
 hidden_dim = _env_int("HP_HIDDEN_DIM", 256)
 num_epochs = _env_int("HP_MAX_EPOCHS", 20)
 patience = _env_int("HP_PATIENCE", 3)
