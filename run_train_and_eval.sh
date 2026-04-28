@@ -1,12 +1,25 @@
 #!/bin/bash
 #
+# Slurm-Job: Orchestrator für die komplette Train+Eval-Pipeline.
+# Kann direkt mit `sbatch run_train_and_eval.sh` gestartet werden.
+#
+#SBATCH --job-name=train_eval_orch
+#SBATCH --partition=paula
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=2GB
+#SBATCH --time=0-24:00:00
+#SBATCH --output=/work2/ra39oxet-DatasetAudioSetSubset/logs/train_eval_orch_%j.out
+#SBATCH --error=/work2/ra39oxet-DatasetAudioSetSubset/logs/train_eval_orch_%j.err
+#
 # Training + Evaluation: Pair → Genre → Audio-Encoder Pair → Audio-Encoder Genre → Evaluation.
 # Erstellt einen gemeinsamen Ordner training_runs/<Datum_Uhrzeit>/; alle Schritte
 # speichern darin (Heads, Meta, Evaluation-Ausgabe).
 #
 # Nutzung (vom Repo-Root auf dem Cluster):
 #   bash run_train_and_eval.sh
+#   sbatch run_train_and_eval.sh
 #   DATASET_RUN_NAME=2026-03-13_18-12-31_audioset bash run_train_and_eval.sh
+#   sbatch --export=DATASET_RUN_NAME=2026-03-13_18-12-31_audioset run_train_and_eval.sh
 #
 set -e
 REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
