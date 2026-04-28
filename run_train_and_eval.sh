@@ -22,8 +22,8 @@
 #   sbatch --export=DATASET_RUN_NAME=2026-03-13_18-12-31_audioset run_train_and_eval.sh
 #
 set -e
-REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
-cd "$REPO_ROOT"
+REPO_ROOT="${SLURM_SUBMIT_DIR:-$(cd "$(dirname "$0")" && pwd)}"
+cd "$REPO_ROOT" || { echo "FEHLER: cd nach $REPO_ROOT fehlgeschlagen." >&2; exit 1; }
 
 # Dataset-Run: aus Umgebung oder neuester
 export DATASET_RUN_NAME
