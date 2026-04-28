@@ -208,7 +208,7 @@ wav2clip_model.load_state_dict(ckpt["wav2clip"])
 wav2clip_model.eval()
 test_ds = RawAudioPairDataset("test", TRAIN_VAL_TEST_SPLIT_CSV, EMBEDDINGS_DIR, return_video_id=True)
 test_embed_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=0)
-ae_emb_dir = training_run_dir / "audio_encoder_test_embeddings"
+ae_emb_dir = training_run_dir / "audio_encoder_genre_test_embeddings"
 ae_emb_dir.mkdir(exist_ok=True)
 with torch.no_grad():
     for video_ids, _, a_t in test_embed_loader:

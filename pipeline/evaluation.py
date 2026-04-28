@@ -111,13 +111,13 @@ Vn = F.normalize(V, p=2, dim=-1)
 An = F.normalize(A, p=2, dim=-1)
 
 # Pre-computed Audio-Encoder-Embeddings laden (in gleicher Reihenfolge wie test_ds)
-def _load_ae_embeddings(run_path, samples):
-    emb_dir = run_path / "audio_encoder_test_embeddings"
+def _load_ae_embeddings(run_path, subdir, samples):
+    emb_dir = run_path / subdir
     embs = [torch.tensor(np.load(emb_dir / f"{video_id}.npy"), dtype=torch.float32) for video_id, *_ in samples]
     return torch.stack(embs).to(DEVICE)
 
-A_ae_pair = _load_ae_embeddings(ae_pair_path, test_ds.samples) if ae_pair_path else None
-A_ae_genre = _load_ae_embeddings(ae_genre_path, test_ds.samples) if ae_genre_path else None
+A_ae_pair = _load_ae_embeddings(ae_pair_path, "audio_encoder_pair_test_embeddings", test_ds.samples) if ae_pair_path else None
+A_ae_genre = _load_ae_embeddings(ae_genre_path, "audio_encoder_genre_test_embeddings", test_ds.samples) if ae_genre_path else None
 
 # Ähnlichkeitsmatrizen
 sim_baseline = (Vn @ An.T).cpu()

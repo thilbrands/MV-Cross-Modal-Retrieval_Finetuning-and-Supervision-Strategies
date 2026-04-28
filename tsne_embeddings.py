@@ -34,8 +34,8 @@ if not ae_pair_run or not ae_genre_run:
     print("FEHLER: Audio-Encoder-Runs nicht gefunden. AE_PAIR_RUN_DIR / AE_GENRE_RUN_DIR setzen.", flush=True)
     sys.exit(1)
 
-ae_pair_emb_dir = ae_pair_run / "audio_encoder_test_embeddings"
-ae_genre_emb_dir = ae_genre_run / "audio_encoder_test_embeddings"
+ae_pair_emb_dir = ae_pair_run / "audio_encoder_pair_test_embeddings"
+ae_genre_emb_dir = ae_genre_run / "audio_encoder_genre_test_embeddings"
 
 # Test-Samples laden
 samples = []
