@@ -14,7 +14,7 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=24GB
 #SBATCH --gres=gpu:1
-#SBATCH --time=7-00:00:00
+#SBATCH --time=2-00:00:00
 
 #SBATCH --output=/work2/ra39oxet-DatasetAudioSetSubset/logs/tuning_%j.out
 #SBATCH --error=/work2/ra39oxet-DatasetAudioSetSubset/logs/tuning_%j.err
