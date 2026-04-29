@@ -14,7 +14,7 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=24GB
 #SBATCH --gres=gpu:1
-#SBATCH --time=0-12:00:00
+#SBATCH --time=7-00:00:00
 
 #SBATCH --output=/work2/ra39oxet-DatasetAudioSetSubset/logs/tuning_%j.out
 #SBATCH --error=/work2/ra39oxet-DatasetAudioSetSubset/logs/tuning_%j.err
@@ -37,7 +37,6 @@ fi
 source "$HOME/venv/ba/bin/activate"
 
 export PYTHONUNBUFFERED=1
-export HP_BATCH_SIZE="${HP_BATCH_SIZE:-128}"
 export HP_MAX_EPOCHS="${HP_MAX_EPOCHS:-20}"
 export HP_PATIENCE="${HP_PATIENCE:-3}"
 export HP_TUNE_WORKERS="${HP_TUNE_WORKERS:-12}"
@@ -54,7 +53,7 @@ if [[ -z "${DATASET_RUN_NAME:-}" ]]; then
   exit 1
 fi
 echo "DATASET_RUN_NAME: $DATASET_RUN_NAME"
-echo "HP_BATCH_SIZE=$HP_BATCH_SIZE | HP_MAX_EPOCHS=$HP_MAX_EPOCHS | HP_PATIENCE=$HP_PATIENCE | HP_TUNE_WORKERS=$HP_TUNE_WORKERS | HP_SEED=$HP_SEED"
+echo "HP_MAX_EPOCHS=$HP_MAX_EPOCHS | HP_PATIENCE=$HP_PATIENCE | HP_TUNE_WORKERS=$HP_TUNE_WORKERS | HP_SEED=$HP_SEED"
 echo "Starte tuning_pair + tuning_genre …"
 
 echo "========== 1/2 Pair-Tuning (task-aligned: Protokoll A) =========="
