@@ -5,7 +5,7 @@
 #
 # Nutzung:
 #   sbatch jobs/audio_encoder_genre_training.sh
-#   sbatch --export=DATASET_RUN_NAME=...,HP_LR=1e-4,HP_LR_ENCODER=1e-5,HP_OUT_DIM=128,HP_TEMP=0.07,HP_HEAD_TYPE=mlp jobs/audio_encoder_genre_training.sh
+#   sbatch --export=DATASET_RUN_NAME=...,HP_LR=1e-3,HP_LR_ENCODER=1e-4,HP_OUT_DIM=64,HP_TEMP=0.3,HP_HEAD_TYPE=mlp jobs/audio_encoder_genre_training.sh
 #
 
 #SBATCH --job-name=ae_genre_training
@@ -35,10 +35,10 @@ export PYTHONUNBUFFERED=1
 export HP_LR="${HP_LR:-1e-3}"
 export HP_LR_ENCODER="${HP_LR_ENCODER:-1e-4}"
 export HP_OUT_DIM="${HP_OUT_DIM:-64}"
-export HP_TEMP="${HP_TEMP:-0.07}"
-export HP_HEAD_TYPE="${HP_HEAD_TYPE:-linear}"
+export HP_TEMP="${HP_TEMP:-0.3}"
+export HP_HEAD_TYPE="${HP_HEAD_TYPE:-mlp}"
 export HP_HIDDEN_DIM="${HP_HIDDEN_DIM:-256}"
-export HP_BATCH_SIZE="${HP_BATCH_SIZE:-128}"
+export HP_BATCH_SIZE="${HP_BATCH_SIZE:-64}"
 export HP_MAX_EPOCHS="${HP_MAX_EPOCHS:-20}"
 export HP_PATIENCE="${HP_PATIENCE:-3}"
 export HP_SEED="${HP_SEED:-42}"
