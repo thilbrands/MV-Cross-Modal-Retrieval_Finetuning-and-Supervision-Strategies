@@ -96,7 +96,17 @@ while squeue -j "$JOB5" 2>/dev/null | grep -q "$JOB5"; do sleep 60; done
 echo "Evaluation beendet."
 
 echo ""
+echo "========== 6/6 Genre-Breakdown-Evaluation =========="
+JOB6=$(sbatch --parsable --export=DATASET_RUN_NAME,TRAINING_RUN_DIR,AE_PAIR_RUN_DIR,AE_GENRE_RUN_DIR,TRAIN_GENRES \
+  --output="$TRAINING_RUN_DIR/genre_breakdown.out" --error="$TRAINING_RUN_DIR/genre_breakdown.err" \
+  jobs/eval_genre_breakdown.sh)
+echo "Job gestartet: $JOB6"
+echo "Warte auf Abschluss …"
+while squeue -j "$JOB6" 2>/dev/null | grep -q "$JOB6"; do sleep 60; done
+echo "Genre-Breakdown beendet."
+
+echo ""
 echo "========== E4-Exploration fertig =========="
 echo "Dataset-Run:  $DATASET_RUN_NAME"
 echo "Ausgaben in:  $TRAINING_RUN_DIR"
-echo "  (projection_heads_*.pt, audio_encoder_*.pt, meta_*.json, *.out/.err, evaluation_output.txt)"
+echo "  (projection_heads_*.pt, audio_encoder_*.pt, meta_*.json, *.out/.err, evaluation_output.txt, genre_breakdown.txt)"
