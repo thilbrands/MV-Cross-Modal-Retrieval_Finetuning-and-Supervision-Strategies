@@ -13,9 +13,12 @@ from torch.utils.data import Dataset
 
 
 class PairDataset(Dataset):
-    """Lädt Video-/Audio-Embeddings pro Split-Zeile; optional mit Genre-Label."""
+    """Lädt Video-/Audio-Embeddings pro Split-Zeile; optional mit Genre-Label.
 
-    def __init__(self, split_name: str, split_csv: Path, embeddings_dir: Path, return_label: bool = False):
+    allow_labels: wenn gesetzt, werden nur Samples mit Label in dieser Menge geladen.
+    """
+
+    def __init__(self, split_name: str, split_csv: Path, embeddings_dir: Path, return_label: bool = False, allow_labels=None):
         self.embeddings_dir = Path(embeddings_dir)
         self.return_label = return_label
         self.samples = []
@@ -27,6 +30,8 @@ class PairDataset(Dataset):
                 if not video_id:
                     continue
                 label = row.get("label", "").strip()
+                if allow_labels is not None and label not in allow_labels:
+                    continue
                 v_path = self.embeddings_dir / "video" / f"{video_id}.npy"
                 a_path = self.embeddings_dir / "audio" / f"{video_id}.npy"
                 if v_path.exists() and a_path.exists():
@@ -52,7 +57,7 @@ class RawAudioPairDataset(Dataset):
     Wird für das Audio-Encoder-Training verwendet.
     """
 
-    def __init__(self, split_name: str, split_csv: Path, embeddings_dir: Path, return_label: bool = False, return_video_id: bool = False):
+    def __init__(self, split_name: str, split_csv: Path, embeddings_dir: Path, return_label: bool = False, return_video_id: bool = False, allow_labels=None):
         self.embeddings_dir = Path(embeddings_dir)
         self.return_label = return_label
         self.return_video_id = return_video_id
@@ -65,6 +70,8 @@ class RawAudioPairDataset(Dataset):
                 if not video_id:
                     continue
                 label = row.get("label", "").strip()
+                if allow_labels is not None and label not in allow_labels:
+                    continue
                 v_path = self.embeddings_dir / "video" / f"{video_id}.npy"
                 a_path = self.embeddings_dir / "audio_raw" / f"{video_id}.npy"
                 if v_path.exists() and a_path.exists():

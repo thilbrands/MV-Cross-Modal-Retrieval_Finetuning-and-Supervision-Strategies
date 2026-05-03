@@ -73,8 +73,11 @@ patience = _env_int("HP_PATIENCE", 3)
 seed = _env_int("HP_SEED", 42)
 _set_seed(seed)
 
-train_ds = RawAudioPairDataset("train", TRAIN_VAL_TEST_SPLIT_CSV, EMBEDDINGS_DIR)
-val_ds = RawAudioPairDataset("val", TRAIN_VAL_TEST_SPLIT_CSV, EMBEDDINGS_DIR)
+_train_genres_env = os.environ.get("TRAIN_GENRES")
+train_genres = set(_train_genres_env.split(",")) if _train_genres_env else None
+
+train_ds = RawAudioPairDataset("train", TRAIN_VAL_TEST_SPLIT_CSV, EMBEDDINGS_DIR, allow_labels=train_genres)
+val_ds = RawAudioPairDataset("val", TRAIN_VAL_TEST_SPLIT_CSV, EMBEDDINGS_DIR, allow_labels=train_genres)
 train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=0)
 val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, num_workers=0)
 
@@ -87,7 +90,7 @@ opt = torch.optim.Adam([
     {"params": wav2clip_model.parameters(), "lr": lr_encoder},
 ])
 
-print(f"Dataset-Run: {run_name} | Train: {len(train_ds)} | Val: {len(val_ds)} | Epochs: {num_epochs} | Device: {DEVICE}", flush=True)
+print(f"Dataset-Run: {run_name} | Train: {len(train_ds)} | Val: {len(val_ds)} | Epochs: {num_epochs} | Device: {DEVICE} | TRAIN_GENRES: {train_genres or 'alle'}", flush=True)
 print(f"Training-Run: {training_run_dir}", flush=True)
 print(f"Hyperparams: lr={lr} lr_encoder={lr_encoder} temp={temp} out_dim={out_dim} head_type={head_type} hidden_dim={hidden_dim} batch_size={batch_size} patience={patience} seed={seed}", flush=True)
 
@@ -154,6 +157,7 @@ meta = {
     "dataset_run": run_name,
     "git_commit": config.get_git_commit(),
     "training_type": "audio_encoder_pair",
+    "train_genres": sorted(train_genres) if train_genres else None,
     "hyperparams": {
         "max_epochs": num_epochs,
         "patience": patience,
