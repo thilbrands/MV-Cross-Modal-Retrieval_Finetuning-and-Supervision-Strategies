@@ -1,0 +1,12 @@
+# Einmalig im Cluster-Venv „ba“ (oder separatem venv) installieren:
+#   pip install -r requirements-vlm.txt
+#   pip install "git+https://github.com/huggingface/transformers.git"
+# (Qwen3-VL braucht oft noch nicht freigegebene Release-Versionen — siehe Model Card.)
+#
+# Modell-Download: auf dem Login-Knoten mit Netzwerk ggf. vorab:
+#   export HF_HOME=/work2/ra39oxet-DatasetAudioSetSubset/.cache/huggingface
+#   huggingface-cli download Qwen/Qwen3-VL-2B-Instruct
+
+accelerate>=0.34.0
+safetensors>=0.4.0
+einops>=0.7.0
