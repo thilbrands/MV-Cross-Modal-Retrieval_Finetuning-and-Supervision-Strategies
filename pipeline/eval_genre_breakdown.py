@@ -1,6 +1,7 @@
 """
 Genre-Breakdown-Evaluation für E4-Exploration.
 Berechnet Retrieval-Metriken pro Genre und aggregiert nach Seen/Unseen.
+Beide Protokolle: A (exaktes Paar) und B (gleiches Genre).
 
 Env-Vars:
   TRAINING_RUN_DIR  — Ordner mit den Heads (z.B. e4_exploration/)
@@ -13,7 +14,7 @@ Env-Vars:
 import os
 import sys
 from pathlib import Path
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import numpy as np
 import torch
@@ -31,7 +32,7 @@ from models import (
     load_audio_encoder_heads_pair,
     load_audio_encoder_heads_genre,
 )
-from metrics import labels_from_split_csv, label_relevance_matrix, MRR, recall_at_k, mean_rank
+from metrics import labels_from_split_csv, label_relevance_matrix, pair_relevance_matrix, MRR, recall_at_k, mean_rank
 
 # --- Pfade ---
 run_name = os.environ.get("DATASET_RUN_NAME") or config.get_latest_run_name()
@@ -109,21 +110,23 @@ sim_genre = (v_genre @ a_genre.T).cpu()
 sim_ae_pair = (v_ae_pair @ a_ae_pair.T).cpu() if a_ae_pair is not None else None
 sim_ae_genre = (v_ae_genre @ a_ae_genre.T).cpu() if a_ae_genre is not None else None
 
+rel_pair = pair_relevance_matrix(len(test_ds))
 rel_label = label_relevance_matrix(labels)
 
 # --- Genre-Breakdown ---
 _out_lines: List[str] = []
+_plot_data: Dict[str, Dict] = {}  # model -> {"A": {direction: {seen, unseen, gesamt}}, "B": ...}
 
 def _out(s: str) -> None:
     print(s, flush=True)
     _out_lines.append(s)
 
-def genre_metrics(sim: torch.Tensor, genre: str) -> dict:
+def genre_metrics(sim: torch.Tensor, genre: str, rel: torch.Tensor) -> dict:
     idx = [i for i, l in enumerate(labels.tolist()) if l == genre]
     if not idx:
         return {}
     sim_sub = sim[idx, :]
-    rel_sub = rel_label[idx, :]
+    rel_sub = rel[idx, :]
     return {
         "n": len(idx),
         "mrr": MRR(sim_sub, relevance=rel_sub),
@@ -133,14 +136,13 @@ def genre_metrics(sim: torch.Tensor, genre: str) -> dict:
         "mr": mean_rank(sim_sub, relevance=rel_sub),
     }
 
-def print_breakdown(title: str, sim_va: torch.Tensor, sim_av: torch.Tensor) -> None:
-    _out(f"\n{'='*70}")
-    _out(f"  {title}")
-    _out(f"{'='*70}")
-
+def _print_protocol(sim_va: torch.Tensor, sim_av: torch.Tensor, rel: torch.Tensor, prot_label: str) -> Dict:
+    """Gibt eine Protokoll-Tabelle aus und gibt Seen/Unseen/Gesamt-MRR je Richtung zurück."""
+    _out(f"\n  [ {prot_label} ]")
     header = f"  {'Genre':<20} {'Seen':>5}  {'N':>5}  {'MRR':>6}  {'R@1':>6}  {'R@5':>6}  {'R@10':>6}  {'MRank':>7}"
     sep = "  " + "-" * 68
 
+    result: Dict = {}
     for direction, sim in [("V→A", sim_va), ("A→V", sim_av)]:
         _out(f"\n  --- {direction} ---")
         _out(header)
@@ -150,7 +152,7 @@ def print_breakdown(title: str, sim_va: torch.Tensor, sim_av: torch.Tensor) -> N
         unseen_vals = {k: [] for k in ["mrr", "r1", "r5", "r10", "mr"]}
 
         for genre in all_genres:
-            m = genre_metrics(sim, genre)
+            m = genre_metrics(sim, genre, rel)
             if not m:
                 continue
             if seen_genres is not None:
@@ -172,6 +174,18 @@ def print_breakdown(title: str, sim_va: torch.Tensor, sim_av: torch.Tensor) -> N
             _out(f"  {'Seen Ø (7)':<20} {'':>5}  {'':>5}  {sv['mrr']:>6.3f}  {sv['r1']:>6.3f}  {sv['r5']:>6.3f}  {sv['r10']:>6.3f}  {sv['mr']:>7.1f}")
             _out(f"  {'Unseen Ø (3)':<20} {'':>5}  {'':>5}  {uv['mrr']:>6.3f}  {uv['r1']:>6.3f}  {uv['r5']:>6.3f}  {uv['r10']:>6.3f}  {uv['mr']:>7.1f}")
             _out(f"  {'Gesamt Ø':<20} {'':>5}  {'':>5}  {av['mrr']:>6.3f}  {av['r1']:>6.3f}  {av['r5']:>6.3f}  {av['r10']:>6.3f}  {av['mr']:>7.1f}")
+            result[direction] = {"seen": sv["mrr"], "unseen": uv["mrr"], "gesamt": av["mrr"]}
+
+    return result
+
+def print_breakdown(title: str, sim_va: torch.Tensor, sim_av: torch.Tensor) -> None:
+    _out(f"\n{'='*70}")
+    _out(f"  {title}")
+    _out(f"{'='*70}")
+    res_a = _print_protocol(sim_va, sim_av, rel_pair, "Protokoll A: Pair-basiert (exaktes Paar)")
+    res_b = _print_protocol(sim_va, sim_av, rel_label, "Protokoll B: Label-basiert (gleiches Genre)")
+    if seen_genres is not None:
+        _plot_data[title] = {"A": res_a, "B": res_b}
 
 _out(f"Dataset-Run:      {run_name}")
 _out(f"Training-Run-Dir: {shared_run_dir or '-'}")
@@ -187,7 +201,56 @@ if sim_ae_pair is not None:
 if sim_ae_genre is not None:
     print_breakdown("Audio-Encoder Genre", sim_ae_genre, sim_ae_genre.T)
 
-# Ausgabe speichern
+# --- Plot: Seen Ø vs. Unseen Ø MRR (alle Modelle, beide Protokolle) ---
+if seen_genres is not None and _plot_data and os.environ.get("TRAINING_RUN_DIR"):
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        models = list(_plot_data.keys())
+        short_names = [
+            m.replace("Audio-Encoder", "AE").replace(" (kein Head)", "").replace(" Heads", "")
+            for m in models
+        ]
+        x = np.arange(len(models))
+        width = 0.25
+
+        fig, axes = plt.subplots(2, 2, figsize=(14, 9))
+        fig.suptitle("Seen Ø vs. Unseen Ø — MRR pro Modell", fontsize=13)
+
+        plot_configs = [
+            ("A", "V→A", axes[0, 0], "Protokoll A — V→A"),
+            ("A", "A→V", axes[0, 1], "Protokoll A — A→V"),
+            ("B", "V→A", axes[1, 0], "Protokoll B — V→A"),
+            ("B", "A→V", axes[1, 1], "Protokoll B — A→V"),
+        ]
+
+        for prot, direction, ax, subtitle in plot_configs:
+            seen_vals   = [_plot_data[m][prot].get(direction, {}).get("seen",   0.0) for m in models]
+            unseen_vals = [_plot_data[m][prot].get(direction, {}).get("unseen", 0.0) for m in models]
+            gesamt_vals = [_plot_data[m][prot].get(direction, {}).get("gesamt", 0.0) for m in models]
+
+            ax.bar(x - width, seen_vals,   width, label="Seen Ø",   color="#4C72B0")
+            ax.bar(x,         unseen_vals, width, label="Unseen Ø", color="#DD8452")
+            ax.bar(x + width, gesamt_vals, width, label="Gesamt Ø", color="#55A868")
+            ax.set_title(subtitle)
+            ax.set_xticks(x)
+            ax.set_xticklabels(short_names, fontsize=8)
+            ax.set_ylabel("MRR")
+            ax.set_ylim(0, 1)
+            ax.legend(fontsize=8)
+            ax.grid(axis="y", alpha=0.3)
+
+        plt.tight_layout()
+        plot_path = Path(os.environ["TRAINING_RUN_DIR"]) / "genre_breakdown_plot.png"
+        plt.savefig(plot_path, dpi=150)
+        plt.close()
+        print(f"\nPlot gespeichert: {plot_path}", flush=True)
+    except Exception as e:
+        print(f"Plot fehlgeschlagen: {e}", flush=True)
+
+# --- Ausgabe speichern ---
 if os.environ.get("TRAINING_RUN_DIR"):
     out_path = Path(os.environ["TRAINING_RUN_DIR"]) / "genre_breakdown.txt"
     with open(out_path, "w", encoding="utf-8") as f:
