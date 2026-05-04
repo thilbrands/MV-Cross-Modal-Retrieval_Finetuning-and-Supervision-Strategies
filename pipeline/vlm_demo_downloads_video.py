@@ -2,8 +2,8 @@
 Ein MP4 aus einem Dataset-Run: Frame-Extraktion wie extract_and_embed_videos (1 FPS, max. 10 s),
 dann drei Frames (Sekunde 0, 5 und 8 der 1-FPS-Folge) an Qwen3-VL-2B-Instruct.
 
-(Logik extract_frames_1fps bewusst hier dupliziert — das volle extract_and_embed_videos-Modul
-würde CLIP/Wav2CLIP beim Import laden.)
+(Frame-Schleife hier mit fester Obergrenze max_seconds — extract_and_embed_videos.py kürzt mit
+int(duration_sec) und kann dadurch weniger als 9 Frames liefern; volles extract-Modul lädt CLIP.)
 
 Voraussetzungen wie vlm_smoke_test (transformers aus Git, GPU).
 
@@ -30,7 +30,7 @@ MAX_FRAME_SECONDS = 10
 
 
 def extract_frames_1fps(video_path: Path, target_fps: int = 1, max_seconds: int = 10):
-    """Eine Zeile pro Sekunde, max. max_seconds — identisch zur Logik in extract_and_embed_videos."""
+    """Eine Zeile pro Sekunde für t=0 … max_seconds-1. Nicht mit int(duration_sec) kappen — sonst z.B. 8,9s → 8 Frames und Index 8 fehlt."""
     cap = cv2.VideoCapture(str(video_path))
     if not cap.isOpened():
         return []
@@ -39,10 +39,9 @@ def extract_frames_1fps(video_path: Path, target_fps: int = 1, max_seconds: int 
     cap.release()
     if fps <= 0 or frame_count <= 0:
         return []
-    duration_sec = frame_count / fps
     frames = []
     cap = cv2.VideoCapture(str(video_path))
-    for t in range(min(max_seconds, int(duration_sec))):
+    for t in range(max_seconds):
         frame_num = int(t * fps)
         cap.set(cv2.CAP_PROP_POS_FRAMES, frame_num)
         ret, frame = cap.read()
@@ -70,9 +69,15 @@ def main() -> None:
     print(f"Run: {run_name} | Video (erste .mp4): {mp4}", flush=True)
 
     frames_rgb = extract_frames_1fps(mp4, target_fps=TARGET_FPS, max_seconds=MAX_FRAME_SECONDS)
+    if len(frames_rgb) < 9:
+        print(
+            f"FEHLER: Für Frame-Indizes 0, 5, 8 braucht es mindestens 9 Frames, erhalten: {len(frames_rgb)}.",
+            flush=True,
+        )
+        sys.exit(1)
     pil_images = [
         Image.fromarray(frames_rgb[i].astype("uint8"))
-        for i in (0, 5, 9)
+        for i in (0, 5, 8)
     ]
 
     model = Qwen3VLForConditionalGeneration.from_pretrained(
@@ -92,7 +97,7 @@ def main() -> None:
                 {
                     "type": "text",
                     "text": (
-                        "Drei Bilder: Sekunde 0, 5 und 9 eines 10-Sekunden-Segments (1 FPS). "
+                        "Drei Bilder: Sekunde 0, 5 und 8 eines 10-Sekunden-Segments (1 FPS). "
                         "Beschreibe kurz auf Deutsch, was man sieht (Szene, Instrumente, Stil)."
                     ),
                 },
