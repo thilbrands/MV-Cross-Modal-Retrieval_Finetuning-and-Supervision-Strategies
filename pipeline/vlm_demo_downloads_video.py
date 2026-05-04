@@ -1,6 +1,6 @@
 """
 Ein MP4 aus einem Dataset-Run: Frame-Extraktion wie extract_and_embed_videos (1 FPS, max. 10 s),
-dann drei Frames (Sekunde 0, 5 und 9 der 1-FPS-Folge) an Qwen3-VL-2B-Instruct.
+dann drei Frames (Sekunde 0, 5 und 8 der 1-FPS-Folge) an Qwen3-VL-2B-Instruct.
 
 (Logik extract_frames_1fps bewusst hier dupliziert — das volle extract_and_embed_videos-Modul
 würde CLIP/Wav2CLIP beim Import laden.)
