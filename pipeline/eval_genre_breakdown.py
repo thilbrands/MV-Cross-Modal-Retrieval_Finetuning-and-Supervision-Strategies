@@ -216,8 +216,16 @@ if seen_genres is not None and _plot_data and os.environ.get("TRAINING_RUN_DIR")
         x = np.arange(len(models))
         width = 0.25
 
-        fig, axes = plt.subplots(2, 2, figsize=(14, 9))
-        fig.suptitle("Seen Ø vs. Unseen Ø — MRR pro Modell", fontsize=13)
+        unseen_genres = sorted(g for g in all_genres if g not in seen_genres)
+        seen_genres_sorted = sorted(seen_genres)
+        subtitle_seen   = "Seen:   " + ", ".join(seen_genres_sorted)
+        subtitle_unseen = "Unseen: " + ", ".join(unseen_genres)
+
+        fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+        fig.suptitle(
+            f"Seen Ø vs. Unseen Ø — MRR pro Modell\n{subtitle_seen}\n{subtitle_unseen}",
+            fontsize=11,
+        )
 
         plot_configs = [
             ("A", "V→A", axes[0, 0], "Protokoll A — V→A"),
