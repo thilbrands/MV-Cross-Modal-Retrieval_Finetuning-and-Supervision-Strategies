@@ -1,6 +1,6 @@
 """
 Ein MP4 aus einem Dataset-Run: Frame-Extraktion wie extract_and_embed_videos (1 FPS, max. 10 s),
-dann drei Frames (Sekunde 0, 5 und 8 der 1-FPS-Folge) an Qwen3-VL-2B-Instruct.
+dann drei Frames an Qwen3-VL-2B-Instruct (Sekunde 0 / 5 / 8 der 1-FPS-Folge, sonst geklemmt bzw. Anfang-Mitte-Ende).
 
 (Frame-Schleife hier mit fester Obergrenze max_seconds — extract_and_embed_videos.py kürzt mit
 int(duration_sec) und kann dadurch weniger als 9 Frames liefern; volles extract-Modul lädt CLIP.)
@@ -69,16 +69,17 @@ def main() -> None:
     print(f"Run: {run_name} | Video (erste .mp4): {mp4}", flush=True)
 
     frames_rgb = extract_frames_1fps(mp4, target_fps=TARGET_FPS, max_seconds=MAX_FRAME_SECONDS)
-    if len(frames_rgb) < 9:
-        print(
-            f"FEHLER: Für Frame-Indizes 0, 5, 8 braucht es mindestens 9 Frames, erhalten: {len(frames_rgb)}.",
-            flush=True,
-        )
+    n = len(frames_rgb)
+    if n < 3:
+        print(f"FEHLER: Mindestens 3 Frames nötig, erhalten: {n}.", flush=True)
         sys.exit(1)
-    pil_images = [
-        Image.fromarray(frames_rgb[i].astype("uint8"))
-        for i in (0, 5, 8)
-    ]
+    # Ziel Sekunde 0 / 5 / 8 — wenn weniger als 9 Samples (z. B. nur 8× read ok), letzten Index clampen.
+    i0, i1, i2 = 0, min(5, n - 1), min(8, n - 1)
+    if len({i0, i1, i2}) < 3:
+        i0, i1, i2 = 0, n // 2, n - 1
+    if n < 9:
+        print(f"Hinweis: {n} Frames (nicht 10) → Indizes fürs VLM: {i0}, {i1}, {i2}.", flush=True)
+    pil_images = [Image.fromarray(frames_rgb[i].astype("uint8")) for i in (i0, i1, i2)]
 
     model = Qwen3VLForConditionalGeneration.from_pretrained(
         MODEL_ID,
@@ -97,7 +98,7 @@ def main() -> None:
                 {
                     "type": "text",
                     "text": (
-                        "Drei Bilder: Sekunde 0, 5 und 8 eines 10-Sekunden-Segments (1 FPS). "
+                        "Drei Bilder aus dem Segment (Anfang, Mitte, gegen Ende; 1 FPS wo möglich). "
                         "Beschreibe kurz auf Deutsch, was man sieht (Szene, Instrumente, Stil)."
                     ),
                 },
