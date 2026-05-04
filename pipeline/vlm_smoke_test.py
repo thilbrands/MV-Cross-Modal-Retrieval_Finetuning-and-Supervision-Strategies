@@ -37,5 +37,7 @@ generated_ids = model.generate(**inputs, max_new_tokens=128)
 generated_ids_trimmed = [
     out_ids[len(in_ids) :] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
 ]
-outputs = model.generate(**inputs, max_new_tokens=40)
-print(processor.decode(outputs[0][inputs["input_ids"].shape[-1]:]))
+output_text = processor.batch_decode(
+    generated_ids_trimmed, skip_special_tokens=True, clean_up_tokenization_spaces=False
+)
+print(output_text)
