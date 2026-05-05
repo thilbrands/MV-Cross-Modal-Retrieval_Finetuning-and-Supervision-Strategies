@@ -69,7 +69,7 @@ else
   fi
 fi
 
-export AUDIOSET_DOWNLOAD_WORKERS="${AUDIOSET_DOWNLOAD_WORKERS:-2}"
+export AUDIOSET_DOWNLOAD_WORKERS="${AUDIOSET_DOWNLOAD_WORKERS:-4}"
 
 echo "Hostname: $(hostname)"
 echo "node: $(which node 2>/dev/null || echo 'NICHT GEFUNDEN')"
@@ -86,7 +86,7 @@ if ! command -v node >/dev/null 2>&1; then
 fi
 
 export PYTHONUNBUFFERED=1
-python3 "$REPO_ROOT/pipeline/downloader2.py"
+python3 "$REPO_ROOT/pipeline/downloader.py"
 EXIT_CODE=$?
 echo "Job beendet."
 exit $EXIT_CODE
