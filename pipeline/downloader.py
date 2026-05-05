@@ -48,6 +48,7 @@ DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 # Klar benannte Ergebnisdateien pro Run
 RAW_CSV = RUN_DIR / "segments_raw.csv"
+UNBALANCED_CSV = RUN_DIR / "segments_unbalanced.csv"
 BALANCED_CSV = RUN_DIR / "segments_balanced.csv"
 FAILED_CSV = RUN_DIR / "failed_downloads.csv"
 CONFIG_PATH = RUN_DIR / "config.json"
@@ -240,19 +241,10 @@ def download_video_segment_partial(
     out_path: Path,
 ) -> Tuple[bool, str]:
     """
-    Partial download via ffmpeg external_downloader:
-    - yt-dlp übernimmt Media-Download/Feeding an ffmpeg
-    - ffmpeg bekommt -ss / -t, um nur den gewünschten Abschnitt zu extrahieren
+    Partial download via yt-dlp --download-sections.
+    yt-dlp nutzt ffmpeg intern zum Trimmen — kein schwarzes Bild am Anfang.
     """
     cookie_args = _yt_dlp_cookie_args()
-
-    duration = max(0.0, float(end_sec) - float(start_sec))
-
-    # ffmpeg external downloader args:
-    # -ss start seek
-    # -t duration stop after duration
-    ext_down_args_str = f"-ss {start_sec} -t {duration} -loglevel quiet"
-
 
     cmd = [
         sys.executable,
@@ -267,12 +259,8 @@ def download_video_segment_partial(
         *cookie_args,
         "-f",
         f"{VIDEO_QUALITY}/worst",
-        "--merge-output-format",
-        "mp4",
-        "--external-downloader",
-        "ffmpeg",
-        "--external-downloader-args",
-        ext_down_args_str,
+        "--download-sections",
+        f"*{start_sec}-{end_sec}",
         "--no-warnings",
         "-o",
         str(out_path),
@@ -373,16 +361,17 @@ def download_all_segments(subset_csv: Path, download_dir: Path) -> None:
 
 def build_cleaned_balanced_csv(
     subset_csv: Path,
-    cleaned_csv: Path,
+    unbalanced_csv: Path,
+    balanced_csv: Path,
     download_dir: Path,
     genres: List[str],
 ) -> None:
-    # IDENTISCH zu pipeline/downloader.py (Balanced CSV)
-    log("[Balanced-CSV] Lese Subset-CSV und prüfe existierende MP4s …")
+    log("[CSV] Lese Subset-CSV und prüfe existierende MP4s …")
     with open(subset_csv, "r", newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         rows = list(reader)
 
+    fieldnames = ["yt_id", "start_seconds", "end_seconds", "positive_labels", "label"]
     by_genre: Dict[str, List[Dict[str, str]]] = {g: [] for g in genres}
 
     for row in rows:
@@ -395,30 +384,21 @@ def build_cleaned_balanced_csv(
         if (download_dir / f"{yt_id}_{safe}.mp4").exists():
             by_genre[g].append(dict(row))
 
-    min_per_genre = min(len(by_genre[g]) for g in genres)
-    balanced_rows: List[Dict[str, str]] = []
-    for g in genres:
-        for row in by_genre[g][:min_per_genre]:
-            row_with_label = {**row, "label": g}
-            balanced_rows.append(row_with_label)
+    unbalanced_rows = [{**row, "label": g} for g in genres for row in by_genre[g]]
+    with open(unbalanced_csv, "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=fieldnames)
+        w.writeheader()
+        w.writerows(unbalanced_rows)
+    log(f"[Unbalanced-CSV] Geschrieben: {unbalanced_csv} ({len(unbalanced_rows)} Zeilen).")
+    log(f"[Unbalanced-CSV] Pro Genre: { {g: len(by_genre[g]) for g in genres} }")
 
-    with open(cleaned_csv, "w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(
-            f,
-            fieldnames=[
-                "yt_id",
-                "start_seconds",
-                "end_seconds",
-                "positive_labels",
-                "label",
-            ],
-        )
+    min_per_genre = min(len(by_genre[g]) for g in genres)
+    balanced_rows = [{**row, "label": g} for g in genres for row in by_genre[g][:min_per_genre]]
+    with open(balanced_csv, "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=fieldnames)
         w.writeheader()
         w.writerows(balanced_rows)
-
-    log(f"[Balanced-CSV] Geschrieben: {cleaned_csv}")
-    log(f"[Balanced-CSV] {len(balanced_rows)} Zeilen, je {min_per_genre} pro Genre (balanced).")
-    log(f"[Balanced-CSV] Pro Genre vor Kappung: {[len(by_genre[g]) for g in genres]}")
+    log(f"[Balanced-CSV] Geschrieben: {balanced_csv} ({len(balanced_rows)} Zeilen, je {min_per_genre} pro Genre).")
 
 
 def main() -> None:
@@ -495,10 +475,11 @@ def main() -> None:
     download_all_segments(RAW_CSV, DOWNLOAD_DIR)
 
     log("")
-    log("--- Phase 4: Bereinigte balanced CSV ---")
+    log("--- Phase 4: Unbalanced + Balanced CSV ---")
     build_cleaned_balanced_csv(
         subset_csv=RAW_CSV,
-        cleaned_csv=BALANCED_CSV,
+        unbalanced_csv=UNBALANCED_CSV,
+        balanced_csv=BALANCED_CSV,
         download_dir=DOWNLOAD_DIR,
         genres=music_genres,
     )

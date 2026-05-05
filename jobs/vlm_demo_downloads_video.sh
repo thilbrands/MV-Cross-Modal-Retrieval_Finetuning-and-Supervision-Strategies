@@ -1,6 +1,9 @@
 #!/bin/bash
 #
-# Slurm: VLM auf der ersten *.mp4 in datasets/<neuester Run>/downloads/ — drei Frames wie extract_and_embed.
+# Slurm: VLM — drei Frames wie extract_and_embed.
+# Ohne Variable: erste *.mp4 in datasets/<neuester Run>/downloads/
+# Mit Variable: eine bestimmte Datei testen:
+#   sbatch --export=VIDEO_PATH=/work2/.../datasets/RUN/downloads/foo.mp4 jobs/vlm_demo_downloads_video.sh
 #
 #   sbatch jobs/vlm_demo_downloads_video.sh
 #
@@ -38,7 +41,7 @@ source "$HOME/venv/ba/bin/activate"
 export PYTHONUNBUFFERED=1
 
 echo "Hostname: $(hostname) | Job: $SLURM_JOB_ID"
-echo "HF_HOME=$HF_HOME"
+echo "HF_HOME=$HF_HOME | VIDEO_PATH=${VIDEO_PATH:-<erste mp4 im Run>}"
 python3 -c "import torch; print('torch', torch.__version__, 'cuda', torch.cuda.is_available())"
 
 python3 "$REPO_ROOT/pipeline/vlm_demo_downloads_video.py"
