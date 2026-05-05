@@ -295,7 +295,6 @@ def download_all_segments(subset_csv: Path, download_dir: Path) -> None:
         log("[Download] FEHLER: ffmpeg nicht im PATH. Bitte im Job-Skript 'conda_ffmpeg' aktivieren.")
         sys.exit(1)
 
-    log("[Download] Hinweis: Partial Download via external_downloader ffmpeg (-ss/-t).")
     log(f"[Download] ffmpeg: {shutil.which('ffmpeg')}")
 
     with open(subset_csv, "r", newline="", encoding="utf-8") as f:
