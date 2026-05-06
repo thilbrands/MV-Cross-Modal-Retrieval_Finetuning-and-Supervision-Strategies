@@ -30,29 +30,46 @@ TARGET_FPS = 1
 MAX_FRAME_SECONDS = 10
 ALLOWED = {"KEEP_HIGH", "KEEP_LOW", "REMOVE"}
 
-PROMPT = """You are a video content classifier specializing in music-related visual content.
-You are given 3-5 frames sampled from the same video. Based only on what you can see in the frames, classify the video into one of three categories.
-Answer KEEP_HIGH if the frames show:
-- A music video, whether performance-based or narrative/cinematic in style
-- People visibly performing, singing, or dancing
-- A live concert or stage performance
-- Visually styled or cinematically produced content that appears to be made for a music track
+PROMPT = """You are a video content classifier specializing in music-related visual content. Your task is to analyze 3-5 frames sampled from the same video and classify it into exactly one of three categories: KEEP_HIGH, KEEP_LOW, or REMOVE.
+The quality of your classification directly impacts the training of a machine learning model for audio-video retrieval. Incorrectly kept videos with no music-related visual content will introduce noise into the training data and degrade model performance. It is therefore critical that you classify accurately and do not hesitate to answer REMOVE when the visual content is clearly unrelated to music, even if music may be playing in the background.
 
-Answer KEEP_LOW if the frames show:
-- A static album cover or music artwork
-- An animated visualizer or motion graphic clearly associated with music
-- Lo-fi style artwork or simple music-related illustration
-- Still images or footage of musical instruments
-- Any other music-related visual content that does not show people or cinematic production
+Answer KEEP_HIGH if the frames show any of the following:
+A music video, whether performance-based or narrative/cinematic in style
+People visibly performing, singing, playing instruments, or dancing
+A DJ or producer actively working with turntables, a mixing board, or music equipment
+A live concert or stage performance
+Choreographed dance clearly tied to a music performance
+Visually styled or cinematically produced content that appears intentionally made for a music track, even if no one is performing
 
-Answer REMOVE if the frames show:
-- Plain text or lyrics on a plain or black background without styled visuals
-- Gameplay footage
-- A screen recording or tutorial of any kind
-- Random everyday footage such as home videos, street footage, or a person talking to a camera without any performance context
+Answer KEEP_LOW if the frames show any of the following:
+
+A static or near-static photo of an artist or band without action or movement
+A static album cover or music artwork
+An animated visualizer or motion graphic clearly associated with music
+Lo-fi style artwork or simple music-related illustration
+Still images or footage of musical instruments without a person actively playing them
+Any other music-related visual content that does not show people performing or cinematic production
+
+Answer REMOVE if the frames show any of the following:
+
+Plain text or lyrics on a plain, black, or single-color background, even if the text is colorful or stylized
+A screen recording of any software or application, even if music is playing in the background
+Someone drawing, painting, or creating artwork on screen using software, even if music is audible
+Gameplay footage of any kind
+A tutorial, lecture, or instructional video of any kind
+Random everyday footage such as home videos, street footage, or a person talking to a camera without any performance context
+Any video where the primary visual content is clearly unrelated to music, regardless of whether music is playing
+
+
+Important rules:
 
 Look only at the visual content. Do not make assumptions about the audio.
-If unsure, answer KEEP_LOW.
+If the frames show both music-related and unrelated content, classify based on what dominates visually.
+A screen recording of software or games is always REMOVE, even if music-related content is visible in the background.
+A static artist photo without movement or action is always KEEP_LOW, never KEEP_HIGH.
+Do not hesitate to answer REMOVE. Keeping low-quality or unrelated videos is more harmful than removing them.
+If genuinely unsure, answer KEEP_LOW.
+
 Respond with only one word: KEEP_HIGH, KEEP_LOW, or REMOVE."""
 
 
@@ -124,9 +141,9 @@ def main() -> None:
         sys.exit(1)
 
     run_dir = config.DATASETS_ROOT / run_name
-    raw_csv = run_dir / "segments_raw.csv"
+    raw_csv = run_dir / "segments_unbalanced.csv"
     downloads = run_dir / "downloads"
-    scored_csv = run_dir / "segments_raw_vlm_scored.csv"
+    scored_csv = run_dir / "segments_unbalanced_vlm_scored.csv"
 
     if not raw_csv.exists():
         print(f"FEHLER: fehlt {raw_csv}", flush=True)
@@ -152,17 +169,12 @@ def main() -> None:
     processor = AutoProcessor.from_pretrained(MODEL_ID)
 
     scored_rows = []
-    missing_count = 0
     total = len(rows)
     for i, row in enumerate(rows, start=1):
         yt_id = row["yt_id"].strip()
         start_s = row["start_seconds"].strip()
         video_id = f"{yt_id}_{start_s.replace('.', 'p')}"
         mp4 = downloads / f"{video_id}.mp4"
-
-        if not mp4.exists():
-            missing_count += 1
-            continue
 
         frames = extract_frames_1fps(mp4, target_fps=TARGET_FPS, max_seconds=MAX_FRAME_SECONDS)
         pil_images = choose_five_or_three(frames)
@@ -173,10 +185,7 @@ def main() -> None:
         scored_rows.append(new_row)
 
         if i % 100 == 0 or i == total:
-            print(
-                f"Fortschritt: {i}/{total} | geschrieben={len(scored_rows)} | fehlende_mp4={missing_count}",
-                flush=True,
-            )
+            print(f"Fortschritt: {i}/{total}", flush=True)
 
     with open(scored_csv, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=out_fields)
@@ -184,7 +193,6 @@ def main() -> None:
         w.writerows(scored_rows)
 
     print(f"Geschrieben: {scored_csv} ({len(scored_rows)} Zeilen)", flush=True)
-    print(f"Uebersprungen (fehlende MP4): {missing_count}", flush=True)
 
 
 if __name__ == "__main__":
