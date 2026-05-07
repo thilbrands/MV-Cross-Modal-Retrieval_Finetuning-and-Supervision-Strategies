@@ -262,6 +262,8 @@ def download_video_segment_partial(
         "--download-sections",
         f"*{start_sec}-{end_sec}",
         "--no-warnings",
+        "--sleep-interval", "2",
+        "--max-sleep-interval", "5",
         "-o",
         str(out_path),
         f"https://www.youtube.com/watch?v={youtube_id}",
