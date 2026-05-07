@@ -11,7 +11,7 @@
 #SBATCH --partition=paula
 #SBATCH --cpus-per-task=48
 #SBATCH --mem=128GB
-#SBATCH --time=1-00:00:00
+#SBATCH --time=2-00:00:00
 
 #SBATCH --output=/work2/ra39oxet-DatasetAudioSetSubset/logs/audioset_%j.out
 #SBATCH --error=/work2/ra39oxet-DatasetAudioSetSubset/logs/audioset_%j.err
@@ -69,7 +69,7 @@ else
   fi
 fi
 
-export AUDIOSET_DOWNLOAD_WORKERS="${AUDIOSET_DOWNLOAD_WORKERS:-4}"
+export AUDIOSET_DOWNLOAD_WORKERS="${AUDIOSET_DOWNLOAD_WORKERS:-2}"
 
 echo "Hostname: $(hostname)"
 echo "node: $(which node 2>/dev/null || echo 'NICHT GEFUNDEN')"
