@@ -62,20 +62,16 @@ def audio_to_wav2clip_embedding(audio_np, model):
     return emb.squeeze()
 
 
-def build_video_list(raw_csv: Path, downloads_dir: Path) -> List[Dict[str, str]]:
-    with open(raw_csv, "r", newline="", encoding="utf-8") as f:
+def build_video_list(split_csv: Path, downloads_dir: Path) -> List[Dict[str, str]]:
+    with open(split_csv, "r", newline="", encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
     video_list: List[Dict[str, str]] = []
     for row in rows:
-        yt_id = row["yt_id"].strip()
-        start_s = row["start_seconds"].strip()
-        safe = start_s.replace(".", "p")
-        mp4_path = downloads_dir / f"{yt_id}_{safe}.mp4"
+        video_id = row["video_id"].strip()
+        mp4_path = downloads_dir / f"{video_id}.mp4"
         if mp4_path.exists():
             video_list.append({
-                "yt_id": yt_id,
-                "start_seconds": start_s,
-                "video_id": f"{yt_id}_{safe}",
+                "video_id": video_id,
                 "mp4_path": str(mp4_path),
                 "label": row.get("label", ""),
             })
@@ -205,14 +201,14 @@ def main() -> None:
         log(f"DATASET_RUN_NAME (aus Umgebung): {run_name}")
 
     run_dir = DATASETS_ROOT / run_name
-    balanced_csv = run_dir / "segments_balanced.csv"
+    split_csv = run_dir / "train_val_test_split.csv"
     downloads_dir = run_dir / "downloads"
     embeddings_dir = run_dir / "embeddings"
     video_dir = embeddings_dir / "video"
     audio_dir = embeddings_dir / "audio"
 
-    if not balanced_csv.exists():
-        log(f"FEHLER: segments_balanced.csv nicht gefunden: {balanced_csv}")
+    if not split_csv.exists():
+        log(f"FEHLER: train_val_test_split.csv nicht gefunden: {split_csv}")
         raise SystemExit(1)
     if not downloads_dir.exists():
         log(f"FEHLER: downloads-Verzeichnis nicht gefunden: {downloads_dir}")
@@ -231,9 +227,9 @@ def main() -> None:
     log(f"RUN_DIR: {run_dir}")
     log(f"DEVICE: {device}")
     log(f"Embeddings → {embeddings_dir}")
-    log(f"CSV (balanced): {balanced_csv}")
+    log(f"CSV (split): {split_csv}")
 
-    video_list = build_video_list(balanced_csv, downloads_dir)
+    video_list = build_video_list(split_csv, downloads_dir)
     log(f"Videos zu verarbeiten: {len(video_list)}")
 
     # Pro Genre: Anzahl ausgeben
