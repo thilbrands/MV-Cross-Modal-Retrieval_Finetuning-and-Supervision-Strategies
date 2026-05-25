@@ -99,7 +99,7 @@ for epoch in range(num_epochs):
         v, a = v.to(DEVICE), a.to(DEVICE)
         opt.zero_grad()
         vp, ap = video_head(v), audio_head(a)
-        loss = infonce_loss(vp, ap, temp=temp)
+        loss = (infonce_loss(vp, ap, temp=temp) + infonce_loss(ap, vp, temp)) / 2
         loss.backward()
         opt.step()
         train_loss += loss.item() * v.size(0)

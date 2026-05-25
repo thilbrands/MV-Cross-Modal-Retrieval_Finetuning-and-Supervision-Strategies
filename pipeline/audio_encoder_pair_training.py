@@ -115,7 +115,7 @@ for epoch in range(num_epochs):
         opt.zero_grad()
         a_emb = wav2clip_model(a)
         vp, ap = video_head(v), audio_head(a_emb)
-        loss = infonce_loss(vp, ap, temp=temp)
+        loss = (infonce_loss(vp, ap, temp=temp) + infonce_loss(ap, vp, temp)) / 2
         loss.backward()
         opt.step()
         train_loss += loss.item() * v.size(0)
