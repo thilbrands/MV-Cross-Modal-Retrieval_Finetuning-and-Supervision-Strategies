@@ -95,7 +95,7 @@ print(f"Training-Run: {training_run_dir}", flush=True)
 print(f"Hyperparams: lr={lr} lr_encoder={lr_encoder} temp={temp} out_dim={out_dim} head_type={head_type} hidden_dim={hidden_dim} batch_size={batch_size} patience={patience} seed={seed}", flush=True)
 
 
-def infonce_loss(v_proj, a_proj, temp=0.07):
+def infonce_loss(v_proj, a_proj, temp):
     v_proj = F.normalize(v_proj, p=2, dim=-1)
     a_proj = F.normalize(a_proj, p=2, dim=-1)
     logits = (v_proj @ a_proj.T) / temp
