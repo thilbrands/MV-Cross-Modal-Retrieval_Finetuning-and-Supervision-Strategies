@@ -97,8 +97,8 @@ print(f"Hyperparams: lr={lr} lr_encoder={lr_encoder} temp={temp} out_dim={out_di
 
 def genre_supcon_loss(v_proj, a_proj, labels, temp: float = 0.07):
     """
-    Supervised Contrastive Loss über Genres, symmetrisch für V→A und A→V.
-    Positive: alle Samples im Batch mit gleichem Label, Negative: Rest im Batch.
+    Supervised Contrastive Loss (Khosla et al. 2020, Eq. 2), cross-modal V↔A.
+    Pro Anker: Mittel über -log(exp(sim_pos)/sum_j exp(sim_j)) je Positive.
     """
     v_proj = F.normalize(v_proj, p=2, dim=-1)
     a_proj = F.normalize(a_proj, p=2, dim=-1)
@@ -112,18 +112,22 @@ def genre_supcon_loss(v_proj, a_proj, labels, temp: float = 0.07):
         same = [j for j, lab in enumerate(labels) if lab == labels[i]]
         if not same:
             continue
-        pos = torch.exp(sim_va[i, same] / temp).sum()
         all_scores = torch.exp(sim_va[i] / temp).sum()
-        loss = loss - torch.log(pos / all_scores)
+        per_pos = torch.stack(
+            [-torch.log(torch.exp(sim_va[i, p] / temp) / all_scores) for p in same]
+        )
+        loss += per_pos.mean()
         count += 1
 
     for i in range(bsz):
         same = [j for j, lab in enumerate(labels) if lab == labels[i]]
         if not same:
             continue
-        pos = torch.exp(sim_av[i, same] / temp).sum()
         all_scores = torch.exp(sim_av[i] / temp).sum()
-        loss = loss - torch.log(pos / all_scores)
+        per_pos = torch.stack(
+            [-torch.log(torch.exp(sim_av[i, p] / temp) / all_scores) for p in same]
+        )
+        loss += per_pos.mean()
         count += 1
 
     if count == 0:
