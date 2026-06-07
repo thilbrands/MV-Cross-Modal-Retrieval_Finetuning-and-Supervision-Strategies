@@ -5,10 +5,12 @@ Exportiert Frame-Strips für zufällige REMOVE-Segmente (wie im VLM-Filter).
 Standard (Cluster, Repo-Root): neuester Dataset-Run unter config.DATASETS_ROOT.
 Output: <run_dir>/remove_examples/
 
+Voraussetzung: Venv „ba“ (opencv-python), wie bei extract_and_embed:
+  module load Python/3.11.5-GCCcore-13.2.0
+  source ~/venv/ba/bin/activate
   python3 helper_scripts/export_remove_frame_examples.py
 
-Optional:
-  DATASET_RUN_NAME=2026-05-05_11-42-52_audioset python3 helper_scripts/export_remove_frame_examples.py
+Oder: sbatch jobs/export_remove_examples.sh
 """
 from __future__ import annotations
 
