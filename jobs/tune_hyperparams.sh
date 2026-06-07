@@ -39,7 +39,8 @@ source "$HOME/venv/ba/bin/activate"
 export PYTHONUNBUFFERED=1
 export HP_MAX_EPOCHS="${HP_MAX_EPOCHS:-20}"
 export HP_PATIENCE="${HP_PATIENCE:-3}"
-export HP_TUNE_WORKERS="${HP_TUNE_WORKERS:-12}"
+# Nur 1 Worker auf 1 GPU — parallele Trials führen zu OOM (Slurm mem=24GB).
+export HP_TUNE_WORKERS="${HP_TUNE_WORKERS:-1}"
 export HP_SEED="${HP_SEED:-42}"
 
 echo "Hostname: $(hostname)"

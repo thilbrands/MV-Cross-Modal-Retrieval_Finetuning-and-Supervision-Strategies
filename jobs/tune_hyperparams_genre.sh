@@ -40,7 +40,8 @@ export PYTHONUNBUFFERED=1
 export TRAINING_TYPE=genre
 export HP_MAX_EPOCHS="${HP_MAX_EPOCHS:-20}"
 export HP_PATIENCE="${HP_PATIENCE:-3}"
-export HP_TUNE_WORKERS="${HP_TUNE_WORKERS:-12}"
+# Nur 1 Worker: mehrere parallele Trainings prozessieren sonst RAM/GPU (OOM).
+export HP_TUNE_WORKERS="${HP_TUNE_WORKERS:-1}"
 export HP_SEED="${HP_SEED:-42}"
 
 echo "Hostname: $(hostname)"
