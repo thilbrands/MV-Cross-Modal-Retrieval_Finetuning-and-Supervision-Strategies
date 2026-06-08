@@ -12,7 +12,7 @@
 #SBATCH --job-name=tuning_genre
 #SBATCH --partition=paula
 #SBATCH --cpus-per-task=12
-#SBATCH --mem=32GB
+#SBATCH --mem=24GB
 #SBATCH --gres=gpu:1
 #SBATCH --time=2-00:00:00
 
