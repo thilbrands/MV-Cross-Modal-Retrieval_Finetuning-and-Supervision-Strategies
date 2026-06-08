@@ -11,8 +11,8 @@
 
 #SBATCH --job-name=tuning_genre
 #SBATCH --partition=paula
-#SBATCH --cpus-per-task=8
-#SBATCH --mem=24GB
+#SBATCH --cpus-per-task=12
+#SBATCH --mem=32GB
 #SBATCH --gres=gpu:1
 #SBATCH --time=2-00:00:00
 
@@ -40,8 +40,9 @@ export PYTHONUNBUFFERED=1
 export TRAINING_TYPE=genre
 export HP_MAX_EPOCHS="${HP_MAX_EPOCHS:-20}"
 export HP_PATIENCE="${HP_PATIENCE:-3}"
-# Nur 1 Worker: mehrere parallele Trainings prozessieren sonst RAM/GPU (OOM).
-export HP_TUNE_WORKERS="${HP_TUNE_WORKERS:-1}"
+# Genre-Trials sind leichtgewichtig (nur Projektionsköpfe + gecachte Embeddings,
+# keine CLIP/Wav2CLIP-Modelle) → mehrere parallele Worker sind unkritisch.
+export HP_TUNE_WORKERS="${HP_TUNE_WORKERS:-12}"
 export HP_SEED="${HP_SEED:-42}"
 
 echo "Hostname: $(hostname)"
