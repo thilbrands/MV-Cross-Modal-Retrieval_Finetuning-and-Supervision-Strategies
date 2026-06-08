@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """
-Exportiert Frame-Strips für zufällige REMOVE-Segmente (wie im VLM-Filter).
+Exportiert Frame-Strips für zufällige KEEP_LOW-Segmente (wie im VLM-Filter).
 
 Standard (Cluster, Repo-Root): neuester Dataset-Run unter config.DATASETS_ROOT.
-Output: <run_dir>/remove_examples/
+Output: <run_dir>/keep_low_examples/
 
 Voraussetzung: Venv „ba“ (opencv-python), wie bei extract_and_embed:
   module load Python/3.11.5-GCCcore-13.2.0
   source ~/venv/ba/bin/activate
-  python3 helper_scripts/export_remove_frame_examples.py
+  python3 helper_scripts/export_keep_low_frame_examples.py
 
-Oder: sbatch jobs/export_remove_examples.sh
+Oder: sbatch jobs/export_keep_low_examples.sh
 """
 from __future__ import annotations
 
@@ -87,7 +87,7 @@ def main() -> None:
     run_dir = resolve_run_dir()
     scored_csv = Path(os.environ.get("SCORED_CSV", str(run_dir / "segments_unbalanced_vlm_scored.csv")))
     downloads = Path(os.environ.get("DOWNLOADS_DIR", str(run_dir / "downloads")))
-    output_dir = Path(os.environ.get("OUTPUT_DIR", str(run_dir / "remove_examples")))
+    output_dir = Path(os.environ.get("OUTPUT_DIR", str(run_dir / "keep_low_examples")))
 
     if not scored_csv.is_file():
         print(f"FEHLER: {scored_csv} nicht gefunden.", file=sys.stderr)
@@ -101,21 +101,21 @@ def main() -> None:
     print(f"Downloads:   {downloads}", flush=True)
     print(f"Output:      {output_dir}", flush=True)
 
-    remove_rows = []
+    keep_low_rows = []
     with open(scored_csv, newline="", encoding="utf-8") as f:
         for row in csv.DictReader(f):
-            if row.get("vlm_score", "").strip() == "REMOVE":
-                remove_rows.append(row)
+            if row.get("vlm_score", "").strip() == "KEEP_LOW":
+                keep_low_rows.append(row)
 
-    if not remove_rows:
-        print(f"Keine REMOVE-Zeilen in {scored_csv}", file=sys.stderr)
+    if not keep_low_rows:
+        print(f"Keine KEEP_LOW-Zeilen in {scored_csv}", file=sys.stderr)
         sys.exit(1)
 
     random.seed(SEED)
-    random.shuffle(remove_rows)
-    picked = remove_rows[:N_EXAMPLES]
+    random.shuffle(keep_low_rows)
+    picked = keep_low_rows[:N_EXAMPLES]
 
-    manifest_path = output_dir / "remove_examples_manifest.csv"
+    manifest_path = output_dir / "keep_low_examples_manifest.csv"
     output_dir.mkdir(parents=True, exist_ok=True)
 
     with open(manifest_path, "w", newline="", encoding="utf-8") as f:
@@ -141,14 +141,14 @@ def main() -> None:
                 print(f"Überspringe (<3 Frames): {video_id}", flush=True)
                 continue
 
-            strip_path = output_dir / f"{i:02d}_{video_id}_remove.png"
+            strip_path = output_dir / f"{i:02d}_{video_id}_keep_low.png"
             save_strip(pil_frames, strip_path)
             w.writerow(
                 {
                     "index": i,
                     "video_id": video_id,
                     "label": row.get("label", ""),
-                    "vlm_score": "REMOVE",
+                    "vlm_score": "KEEP_LOW",
                     "strip_png": str(strip_path),
                     "mp4_path": str(mp4),
                 }
@@ -160,13 +160,13 @@ def main() -> None:
     print(f"Manifest: {manifest_path}", flush=True)
 
     if saved and os.environ.get("SKIP_COMBINE", "").strip() != "1":
-        combined = output_dir / "remove_examples_figure.png"
+        combined = output_dir / "keep_low_examples_figure.png"
         try:
             import importlib.util
 
             spec = importlib.util.spec_from_file_location(
-                "combine_remove_example_strips",
-                _REPO_ROOT / "helper_scripts" / "combine_remove_example_strips.py",
+                "combine_keep_low_example_strips",
+                _REPO_ROOT / "helper_scripts" / "combine_keep_low_example_strips.py",
             )
             mod = importlib.util.module_from_spec(spec)
             assert spec.loader is not None
@@ -175,7 +175,7 @@ def main() -> None:
             print(f"Kombiniert: {n} Zeilen -> {combined}", flush=True)
         except Exception as exc:
             print(f"Hinweis: Kombi-Figure fehlgeschlagen ({exc}).", flush=True)
-            print("Manuell: INPUT_DIR=... python3 helper_scripts/combine_remove_example_strips.py", flush=True)
+            print("Manuell: INPUT_DIR=... python3 helper_scripts/combine_keep_low_example_strips.py", flush=True)
 
 
 if __name__ == "__main__":
