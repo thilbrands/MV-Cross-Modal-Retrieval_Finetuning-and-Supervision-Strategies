@@ -7,3 +7,5 @@ latex/
 expose_deutsch/
 tuning_results/
 .claude/
+helper_scripts/combine*.py
+helper_scripts/export*.py
