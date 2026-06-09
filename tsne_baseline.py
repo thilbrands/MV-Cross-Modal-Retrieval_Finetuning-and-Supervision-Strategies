@@ -66,14 +66,14 @@ for ax, c, title in zip(axes, coords, titles):
     for label in unique_labels:
         idx = [i for i, l in enumerate(labels) if l == label]
         ax.scatter(c[idx, 0], c[idx, 1], c=[label_to_color[label]], label=label, s=20, alpha=0.7)
-    ax.set_title(title, fontsize=16)
+    ax.set_title(title, fontsize=22)
     ax.axis("off")
 
 # Vertikale Trennlinie zwischen den beiden Plots
 fig.add_artist(plt.Line2D([0.5, 0.5], [0.05, 0.95], transform=fig.transFigure, color="grey", linewidth=0.8))
 
-handles = [plt.Line2D([0], [0], marker="o", color="w", markerfacecolor=label_to_color[l], markersize=10, label=l) for l in unique_labels]
-fig.legend(handles=handles, loc="lower center", ncol=5, fontsize=12, bbox_to_anchor=(0.5, -0.05))
+handles = [plt.Line2D([0], [0], marker="o", color="w", markerfacecolor=label_to_color[l], markersize=16, label=l) for l in unique_labels]
+fig.legend(handles=handles, loc="lower center", ncol=5, fontsize=18, bbox_to_anchor=(0.5, -0.05))
 
 plt.tight_layout()
 out_path = run_dir / "tsne_baseline.pdf"
