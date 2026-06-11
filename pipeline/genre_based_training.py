@@ -85,13 +85,7 @@ print(f"Hyperparams: lr={lr} temp={temp} out_dim={out_dim} head_type={head_type}
 
 def genre_supcon_loss(v_proj, a_proj, labels, temp: float = 0.07):
     """
-    Supervised Contrastive Loss (Khosla et al. 2020, Eq. 2), cross-modal V↔A.
-    Pro Anker: Mittel über -log(exp(sim_pos)/sum_j exp(sim_j)) je Positive.
-
-    Vektorisierte Implementierung: rechnet über die gesamte [B, B]-Ähnlichkeits-
-    matrix statt per-Anker-Schleife (mathematisch identisch, nur deutlich schneller).
-    Da jeder Anker über die Diagonale stets mindestens ein Positive besitzt, ist die
-    Mittelung über Anker äquivalent zur ursprünglichen count-basierten Variante.
+     Vektorisierte Implementierung wegen compute limits
     """
     v_proj = F.normalize(v_proj, p=2, dim=-1)
     a_proj = F.normalize(a_proj, p=2, dim=-1)
@@ -109,6 +103,42 @@ def genre_supcon_loss(v_proj, a_proj, labels, temp: float = 0.07):
         return -mean_log_prob_pos.mean()
 
     return (_dir_loss(sim_va) + _dir_loss(sim_av)) / 2
+
+
+# def genre_supcon_loss(v_proj, a_proj, labels, temp: float = 0.07):
+#     v_proj = F.normalize(v_proj, p=2, dim=-1)
+#     a_proj = F.normalize(a_proj, p=2, dim=-1)
+#     sim_va = v_proj @ a_proj.T  # [B, B]
+#     sim_av = sim_va.T
+#     bsz = v_proj.size(0)
+#     loss = 0.0
+#     count = 0
+#
+#     for i in range(bsz):
+#         same = [j for j, lab in enumerate(labels) if lab == labels[i]]
+#         if not same:
+#             continue
+#         all_scores = torch.exp(sim_va[i] / temp).sum()
+#         per_pos = torch.stack(
+#             [-torch.log(torch.exp(sim_va[i, p] / temp) / all_scores) for p in same]
+#         )
+#         loss += per_pos.mean()
+#         count += 1
+#
+#     for i in range(bsz):
+#         same = [j for j, lab in enumerate(labels) if lab == labels[i]]
+#         if not same:
+#             continue
+#         all_scores = torch.exp(sim_av[i] / temp).sum()
+#         per_pos = torch.stack(
+#             [-torch.log(torch.exp(sim_av[i, p] / temp) / all_scores) for p in same]
+#         )
+#         loss += per_pos.mean()
+#         count += 1
+#
+#     if count == 0:
+#         return torch.tensor(0.0, device=v_proj.device)
+#     return loss / count
 
 
 for epoch in range(num_epochs):
