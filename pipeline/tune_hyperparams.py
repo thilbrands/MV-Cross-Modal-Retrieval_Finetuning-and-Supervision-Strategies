@@ -117,7 +117,7 @@ def main():
 
     lr_values = [1e-3, 1e-4, 1e-5]
     out_dims = [64, 128, 256, 512]
-    temps = [0.07, 0.1, 0.3, 0.5, 0.7]
+    temps = [0.07, 0.1, 0.3, 0.5, 0.7, 0.9, 1.0, 1.5]
     head_types = ["linear", "mlp"]
     batch_sizes = [64, 128, 256, 512, 1024]
     hidden_dims = [32, 64, 128, 256, 512]
