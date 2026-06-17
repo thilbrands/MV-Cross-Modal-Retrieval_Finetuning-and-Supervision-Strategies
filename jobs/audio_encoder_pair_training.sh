@@ -5,7 +5,7 @@
 #
 # Nutzung:
 #   sbatch jobs/audio_encoder_pair_training.sh
-#   sbatch --export=DATASET_RUN_NAME=...,HP_LR=1e-4,HP_LR_ENCODER=1e-5,HP_OUT_DIM=256,HP_TEMP=0.1,HP_HEAD_TYPE=mlp jobs/audio_encoder_pair_training.sh
+#   sbatch --export=DATASET_RUN_NAME=...,HP_LR=1e-4,HP_LR_ENCODER=1e-5,HP_OUT_DIM=512,HP_TEMP=0.1,HP_HEAD_TYPE=mlp,HP_BATCH_SIZE=1024 jobs/audio_encoder_pair_training.sh
 #
 
 #SBATCH --job-name=ae_pair_training
@@ -34,11 +34,11 @@ source "$HOME/venv/ba/bin/activate"
 export PYTHONUNBUFFERED=1
 export HP_LR="${HP_LR:-1e-4}"
 export HP_LR_ENCODER="${HP_LR_ENCODER:-1e-5}"
-export HP_OUT_DIM="${HP_OUT_DIM:-256}"
+export HP_OUT_DIM="${HP_OUT_DIM:-512}"
 export HP_TEMP="${HP_TEMP:-0.1}"
 export HP_HEAD_TYPE="${HP_HEAD_TYPE:-mlp}"
 export HP_HIDDEN_DIM="${HP_HIDDEN_DIM:-512}"
-export HP_BATCH_SIZE="${HP_BATCH_SIZE:-256}"
+export HP_BATCH_SIZE="${HP_BATCH_SIZE:-1024}"
 export HP_MAX_EPOCHS="${HP_MAX_EPOCHS:-20}"
 export HP_PATIENCE="${HP_PATIENCE:-3}"
 export HP_SEED="${HP_SEED:-42}"

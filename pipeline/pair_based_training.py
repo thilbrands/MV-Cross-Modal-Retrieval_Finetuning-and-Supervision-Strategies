@@ -54,10 +54,10 @@ else:
     training_run_dir = config.get_new_training_run_dir()
 CHECKPOINT_PATH = training_run_dir / "projection_heads_pair.pt"
 
-batch_size = _env_int("HP_BATCH_SIZE", 256)
+batch_size = _env_int("HP_BATCH_SIZE", 1024)
 lr = _env_float("HP_LR", 1e-4)
 temp = _env_float("HP_TEMP", 0.1)
-out_dim = _env_int("HP_OUT_DIM", 256)
+out_dim = _env_int("HP_OUT_DIM", 512)
 head_type = os.environ.get("HP_HEAD_TYPE", "mlp")
 hidden_dim = _env_int("HP_HIDDEN_DIM", 512)
 num_epochs = _env_int("HP_MAX_EPOCHS", 20)
@@ -112,7 +112,7 @@ for epoch in range(num_epochs):
         for v, a in val_loader:
             v, a = v.to(DEVICE), a.to(DEVICE)
             vp, ap = video_head(v), audio_head(a)
-            val_loss += infonce_loss(vp, ap, temp=temp).item() * v.size(0)
+            val_loss += ((infonce_loss(vp, ap, temp=temp) + infonce_loss(ap, vp, temp=temp)) / 2).item() * v.size(0)
     val_loss /= len(val_ds)
 
     if val_loss < best_val:
