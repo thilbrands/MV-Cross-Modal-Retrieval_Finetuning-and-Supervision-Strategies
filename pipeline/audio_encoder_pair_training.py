@@ -95,7 +95,7 @@ print(f"Training-Run: {training_run_dir}", flush=True)
 print(
     f"Hyperparams: lr={lr} lr_encoder={lr_encoder} temp={temp} out_dim={out_dim} "
     f"head_type={head_type} hidden_dim={hidden_dim} batch_size={batch_size} "
-    f"embed_batch_size={embed_batch_size} patience={patience} seed={seed}",
+    f"patience={patience} seed={seed}",
     flush=True,
 )
 
@@ -169,7 +169,6 @@ meta = {
         "lr": lr,
         "lr_encoder": lr_encoder,
         "batch_size": batch_size,
-        "embed_batch_size": embed_batch_size,
         "contrastive_negatives_per_step": batch_size - 1,
         "temp": temp,
         "out_dim": out_dim,
@@ -189,7 +188,7 @@ ckpt = torch.load(CHECKPOINT_PATH, map_location=DEVICE)
 wav2clip_model.load_state_dict(ckpt["wav2clip"])
 wav2clip_model.eval()
 test_ds = RawAudioPairDataset("test", TRAIN_VAL_TEST_SPLIT_CSV, EMBEDDINGS_DIR, return_video_id=True)
-test_embed_loader = DataLoader(test_ds, batch_size=embed_batch_size, shuffle=False, num_workers=0)
+test_embed_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=0)
 ae_emb_dir = training_run_dir / "audio_encoder_pair_test_embeddings"
 ae_emb_dir.mkdir(exist_ok=True)
 with torch.no_grad():
