@@ -55,6 +55,6 @@ fi
 echo "Hostname: $(hostname)"
 echo "Slurm Job ID: $SLURM_JOB_ID"
 echo "DATASET_RUN_NAME: $DATASET_RUN_NAME"
-echo "HP_LR=${HP_LR:-default} | HP_LR_ENCODER=${HP_LR_ENCODER:-default} | HP_BATCH_SIZE=$HP_BATCH_SIZE | HP_EMBED_BATCH_SIZE=$HP_EMBED_BATCH_SIZE | HP_MAX_EPOCHS=$HP_MAX_EPOCHS | HP_PATIENCE=$HP_PATIENCE"
+echo "HP_LR=${HP_LR:-default} | HP_LR_ENCODER=${HP_LR_ENCODER:-default} | HP_BATCH_SIZE=$HP_BATCH_SIZE | HP_MAX_EPOCHS=$HP_MAX_EPOCHS | HP_PATIENCE=$HP_PATIENCE"
 
 python3 "$REPO_ROOT/pipeline/audio_encoder_pair_training.py"
