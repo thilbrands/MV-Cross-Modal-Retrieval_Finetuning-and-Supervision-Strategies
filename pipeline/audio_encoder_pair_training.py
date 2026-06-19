@@ -61,7 +61,7 @@ else:
     training_run_dir = config.get_new_training_run_dir()
 CHECKPOINT_PATH = training_run_dir / "audio_encoder_pair.pt"
 
-batch_size = _env_int("HP_BATCH_SIZE", 512)
+batch_size = _env_int("HP_BATCH_SIZE", 256)
 lr = _env_float("HP_LR", 1e-4)
 lr_encoder = _env_float("HP_LR_ENCODER", lr / 10)
 temp = _env_float("HP_TEMP", 0.1)
@@ -92,7 +92,12 @@ opt = torch.optim.Adam([
 
 print(f"Dataset-Run: {run_name} | Train: {len(train_ds)} | Val: {len(val_ds)} | Epochs: {num_epochs} | Device: {DEVICE} | TRAIN_GENRES: {train_genres or 'alle'}", flush=True)
 print(f"Training-Run: {training_run_dir}", flush=True)
-print(f"Hyperparams: lr={lr} lr_encoder={lr_encoder} temp={temp} out_dim={out_dim} head_type={head_type} hidden_dim={hidden_dim} batch_size={batch_size} patience={patience} seed={seed}", flush=True)
+print(
+    f"Hyperparams: lr={lr} lr_encoder={lr_encoder} temp={temp} out_dim={out_dim} "
+    f"head_type={head_type} hidden_dim={hidden_dim} batch_size={batch_size} "
+    f"embed_batch_size={embed_batch_size} patience={patience} seed={seed}",
+    flush=True,
+)
 
 
 def infonce_loss(v_proj, a_proj, temp):
@@ -164,6 +169,8 @@ meta = {
         "lr": lr,
         "lr_encoder": lr_encoder,
         "batch_size": batch_size,
+        "embed_batch_size": embed_batch_size,
+        "contrastive_negatives_per_step": batch_size - 1,
         "temp": temp,
         "out_dim": out_dim,
         "head_type": head_type,
@@ -182,7 +189,7 @@ ckpt = torch.load(CHECKPOINT_PATH, map_location=DEVICE)
 wav2clip_model.load_state_dict(ckpt["wav2clip"])
 wav2clip_model.eval()
 test_ds = RawAudioPairDataset("test", TRAIN_VAL_TEST_SPLIT_CSV, EMBEDDINGS_DIR, return_video_id=True)
-test_embed_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=0)
+test_embed_loader = DataLoader(test_ds, batch_size=embed_batch_size, shuffle=False, num_workers=0)
 ae_emb_dir = training_run_dir / "audio_encoder_pair_test_embeddings"
 ae_emb_dir.mkdir(exist_ok=True)
 with torch.no_grad():
