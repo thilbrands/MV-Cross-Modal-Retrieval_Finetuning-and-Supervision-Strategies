@@ -61,7 +61,7 @@ else:
     training_run_dir = config.get_new_training_run_dir()
 CHECKPOINT_PATH = training_run_dir / "audio_encoder_pair.pt"
 
-batch_size = _env_int("HP_BATCH_SIZE", 1024)
+batch_size = _env_int("HP_BATCH_SIZE", 512)
 lr = _env_float("HP_LR", 1e-4)
 lr_encoder = _env_float("HP_LR_ENCODER", lr / 10)
 temp = _env_float("HP_TEMP", 0.1)
