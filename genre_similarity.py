@@ -1,6 +1,6 @@
 """
 Genre Similarity Heatmap: paarweise Cosinus-Ähnlichkeit zwischen Genre-Centroids.
-Basiert auf frozen Wav2CLIP Audio-Embeddings (Val-Split).
+Audio: frozen Wav2CLIP | Video: frozen CLIP (ViT-B/32). Val-Split.
 Speichert genre_similarity.png im Dataset-Run-Ordner.
 
 Run: python3 genre_similarity.py
@@ -9,11 +9,11 @@ Run: python3 genre_similarity.py
 import csv
 import os
 import sys
-from pathlib import Path
 from collections import defaultdict
+from pathlib import Path
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import seaborn as sns
 
 _REPO_ROOT = Path(__file__).resolve().parent
@@ -29,47 +29,62 @@ run_dir = config.DATASETS_ROOT / run_name
 split_csv = run_dir / "train_val_test_split.csv"
 embeddings_dir = run_dir / "embeddings"
 
-# Val-Embeddings nach Genre gruppieren
-genre_embs = defaultdict(list)
-with open(split_csv, "r", newline="", encoding="utf-8") as f:
-    for row in csv.DictReader(f):
-        if row["split"].strip() != "val":
-            continue
-        video_id = row["video_id"].strip()
-        label = row["label"].strip()
-        a_path = embeddings_dir / "audio" / f"{video_id}.npy"
-        if a_path.exists():
-            genre_embs[label].append(np.load(a_path))
 
-genres = sorted(genre_embs.keys())
-print(f"Genres: {genres}", flush=True)
+def _load_genre_embeddings(modality: str) -> dict[str, list[np.ndarray]]:
+    genre_embs: dict[str, list[np.ndarray]] = defaultdict(list)
+    subdir = "audio" if modality == "audio" else "video"
+    with open(split_csv, "r", newline="", encoding="utf-8") as f:
+        for row in csv.DictReader(f):
+            if row["split"].strip() != "val":
+                continue
+            video_id = row["video_id"].strip()
+            label = row["label"].strip()
+            path = embeddings_dir / subdir / f"{video_id}.npy"
+            if path.exists():
+                genre_embs[label].append(np.load(path))
+    return genre_embs
 
-# Centroids berechnen und L2-normalisieren
-centroids = np.stack([
-    np.mean(genre_embs[g], axis=0) for g in genres
-])
-centroids = centroids / np.linalg.norm(centroids, axis=1, keepdims=True)
 
-# Paarweise Cosinus-Ähnlichkeit
-sim_matrix = centroids @ centroids.T
+def _similarity_matrix(genre_embs: dict[str, list[np.ndarray]], genres: list[str]) -> np.ndarray:
+    centroids = np.stack([np.mean(genre_embs[g], axis=0) for g in genres])
+    centroids = centroids / np.linalg.norm(centroids, axis=1, keepdims=True)
+    return centroids @ centroids.T
 
-# Heatmap
-fig, ax = plt.subplots(figsize=(10, 8))
-sns.heatmap(
-    sim_matrix,
-    xticklabels=genres,
-    yticklabels=genres,
-    annot=True,
-    fmt=".2f",
-    cmap="coolwarm",
-    vmin=0,
-    vmax=1,
-    ax=ax,
-)
-ax.set_title("Genre Cosine Similarity (Wav2CLIP frozen, Val-Split)")
-plt.xticks(rotation=45, ha="right")
+
+genre_embs_audio = _load_genre_embeddings("audio")
+genre_embs_video = _load_genre_embeddings("video")
+
+genres = sorted(set(genre_embs_audio) & set(genre_embs_video))
+if not genres:
+    print("FEHLER: Keine gemeinsamen Genre-Embeddings auf Val-Split.", flush=True)
+    sys.exit(1)
+
+print(f"Genres ({len(genres)}): {genres}", flush=True)
+
+sim_audio = _similarity_matrix(genre_embs_audio, genres)
+sim_video = _similarity_matrix(genre_embs_video, genres)
+
+fig, axes = plt.subplots(1, 2, figsize=(20, 8))
+for ax, sim, title in zip(
+    axes,
+    [sim_audio, sim_video],
+    ["Audio — Wav2CLIPro (frozen)", "Video — CLIP (frozen)"],
+):
+    sns.heatmap(
+        sim,
+        xticklabels=genres,
+        yticklabels=genres,
+        annot=True,
+        fmt=".2f",
+        cmap="coolwarm",
+        vmin=0,
+        vmax=1,
+        ax=ax,
+    )
+    ax.set_title(f"Genre Cosine Similarity — {title}\n(Val-Split)")
+    ax.tick_params(axis="x", rotation=45)
+
 plt.tight_layout()
-
 out_path = run_dir / "genre_similarity.png"
 plt.savefig(out_path, dpi=150, bbox_inches="tight")
 plt.close()
