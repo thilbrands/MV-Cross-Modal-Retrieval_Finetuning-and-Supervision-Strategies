@@ -41,7 +41,7 @@ echo "Starte pipeline/genre_based_training.py …"
 export PYTHONUNBUFFERED=1
 # Defaults aus Tuning Trial 70 (tuning_genre_2026-06-15_10-28-04)
 export HP_LR="${HP_LR:-1e-3}"
-export HP_OUT_DIM="${HP_OUT_DIM:-64}"
+export HP_OUT_DIM="${HP_OUT_DIM:-256}"
 export HP_TEMP="${HP_TEMP:-1.5}"
 export HP_HEAD_TYPE="${HP_HEAD_TYPE:-mlp}"
 export HP_HIDDEN_DIM="${HP_HIDDEN_DIM:-512}"

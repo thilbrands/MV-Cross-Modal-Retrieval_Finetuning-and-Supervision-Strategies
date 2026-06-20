@@ -64,11 +64,11 @@ print(f"Genres ({len(genres)}): {genres}", flush=True)
 sim_audio = _similarity_matrix(genre_embs_audio, genres)
 sim_video = _similarity_matrix(genre_embs_video, genres)
 
-fig, axes = plt.subplots(1, 2, figsize=(20, 8))
+fig, axes = plt.subplots(1, 2, figsize=(20, 8), constrained_layout=True)
 for ax, sim, title in zip(
     axes,
     [sim_audio, sim_video],
-    ["Audio — Wav2CLIPro (frozen)", "Video — CLIP (frozen)"],
+    ["Audio — Wav2CLIP (frozen)", "Video — CLIP (frozen)"],
 ):
     sns.heatmap(
         sim,
@@ -79,12 +79,13 @@ for ax, sim, title in zip(
         cmap="coolwarm",
         vmin=0,
         vmax=1,
+        cbar=False,
         ax=ax,
     )
     ax.set_title(f"Genre Cosine Similarity — {title}\n(Val-Split)")
     ax.tick_params(axis="x", rotation=45)
 
-plt.tight_layout()
+fig.colorbar(axes[1].collections[0], ax=axes, location="right", pad=0.02, shrink=0.85)
 out_path = run_dir / "genre_similarity.png"
 plt.savefig(out_path, dpi=150, bbox_inches="tight")
 plt.close()
