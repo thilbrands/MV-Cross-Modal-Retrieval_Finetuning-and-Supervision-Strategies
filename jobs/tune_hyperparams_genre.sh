@@ -1,6 +1,7 @@
 #!/bin/bash
 #
 # Slurm-Job: Hyperparameter-Tuning nur für Genre-Training (Protokoll B).
+# out_dim ist im Tuning fest auf 512 gesetzt (siehe tune_hyperparams.py).
 # Pair-Tuning läuft hier nicht — dafür jobs/tune_hyperparams.sh oder TRAINING_TYPE=pair.
 #
 # Nutzung (vom Repo-Root auf dem Cluster):
