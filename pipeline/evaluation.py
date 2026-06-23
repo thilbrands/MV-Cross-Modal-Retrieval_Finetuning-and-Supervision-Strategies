@@ -26,6 +26,7 @@ from metrics import (
     label_relevance_matrix,
     pair_relevance_matrix,
 )
+from training_metrics import save_evaluation_results_csv
 
 # Run: aus Umgebung oder neuester
 run_name = os.environ.get("DATASET_RUN_NAME") or config.get_latest_run_name()
@@ -147,58 +148,121 @@ sim_ae_genre = (v_ae_genre @ a_ae_genre.T).cpu()
 rel_pair = pair_relevance_matrix(sim_baseline.size(0))
 rel_label = label_relevance_matrix(labels)
 
+EVAL_MODELS = [
+    ("baseline", "Baseline", sim_baseline),
+    ("untrained", "Untrained heads", sim_rand),
+    ("pair", "Pair-based", sim_pair),
+    ("genre", "Genre-based", sim_genre),
+    ("audio_encoder_pair", "Audio-Encoder Pair", sim_ae_pair),
+    ("audio_encoder_genre", "Audio-Encoder Genre", sim_ae_genre),
+]
 
-def print_metrics(name, sim, relevance):
-    _out(f"  {name}")
+EVAL_PROTOCOLS = [
+    ("A", "pair", "Pair-basierte Relevanz (exaktes Video-Audio-Paar)", rel_pair),
+    ("B", "label", "Label-basierte Relevanz (gleiches Genre)", rel_label),
+]
+
+results_rows: List[dict] = []
+
+
+def _compute_metrics(sim, relevance) -> dict:
+    return {
+        "mrr": float(MRR(sim, relevance=relevance)),
+        "recall_at_1": float(recall_at_k(sim, 1, relevance=relevance)),
+        "recall_at_5": float(recall_at_k(sim, 5, relevance=relevance)),
+        "recall_at_10": float(recall_at_k(sim, 10, relevance=relevance)),
+        "mean_rank": float(mean_rank(sim, relevance=relevance)),
+    }
+
+
+def _record_metrics(
+    protocol: str,
+    protocol_name: str,
+    direction: str,
+    model_key: str,
+    model: str,
+    sim,
+    relevance,
+) -> None:
+    metrics = _compute_metrics(sim, relevance)
+    results_rows.append({
+        "protocol": protocol,
+        "protocol_name": protocol_name,
+        "direction": direction,
+        "model_key": model_key,
+        "model": model,
+        **metrics,
+    })
+    _out(f"  {model}")
     _out(
-        "    MRR: " + str(MRR(sim, relevance=relevance))
-        + " | Recall@1: " + str(recall_at_k(sim, 1, relevance=relevance))
-        + " | Recall@5: " + str(recall_at_k(sim, 5, relevance=relevance))
-        + " | Recall@10: " + str(recall_at_k(sim, 10, relevance=relevance))
-        + " | Mean Rank: " + str(mean_rank(sim, relevance=relevance))
+        "    MRR: " + str(metrics["mrr"])
+        + " | Recall@1: " + str(metrics["recall_at_1"])
+        + " | Recall@5: " + str(metrics["recall_at_5"])
+        + " | Recall@10: " + str(metrics["recall_at_10"])
+        + " | Mean Rank: " + str(metrics["mean_rank"])
     )
 
 
-_out("=== Protokoll A: Pair-basierte Relevanz (exaktes Video-Audio-Paar) ===")
-_out("=== V→A (Video als Query, Audio retrieval) ===")
-print_metrics("Baseline", sim_baseline, rel_pair)
-print_metrics("Untrained heads", sim_rand, rel_pair)
-print_metrics("Pair-based", sim_pair, rel_pair)
-print_metrics("Genre-based", sim_genre, rel_pair)
-print_metrics("Audio-Encoder Pair", sim_ae_pair, rel_pair)
-print_metrics("Audio-Encoder Genre", sim_ae_genre, rel_pair)
-_out("")
-_out("=== A→V (Audio als Query, Video retrieval) ===")
-print_metrics("Baseline", sim_baseline.T, rel_pair.T)
-print_metrics("Untrained heads", sim_rand.T, rel_pair.T)
-print_metrics("Pair-based", sim_pair.T, rel_pair.T)
-print_metrics("Genre-based", sim_genre.T, rel_pair.T)
-print_metrics("Audio-Encoder Pair", sim_ae_pair.T, rel_pair.T)
-print_metrics("Audio-Encoder Genre", sim_ae_genre.T, rel_pair.T)
-_out("")
-_out("=== Protokoll B: Label-basierte Relevanz (gleiches Genre) ===")
-_out("=== V→A (Video als Query, Audio retrieval) ===")
-print_metrics("Baseline", sim_baseline, rel_label)
-print_metrics("Untrained heads", sim_rand, rel_label)
-print_metrics("Pair-based", sim_pair, rel_label)
-print_metrics("Genre-based", sim_genre, rel_label)
-print_metrics("Audio-Encoder Pair", sim_ae_pair, rel_label)
-print_metrics("Audio-Encoder Genre", sim_ae_genre, rel_label)
-_out("")
-_out("=== A→V (Audio als Query, Video retrieval) ===")
-print_metrics("Baseline", sim_baseline.T, rel_label.T)
-print_metrics("Untrained heads", sim_rand.T, rel_label.T)
-print_metrics("Pair-based", sim_pair.T, rel_label.T)
-print_metrics("Genre-based", sim_genre.T, rel_label.T)
-print_metrics("Audio-Encoder Pair", sim_ae_pair.T, rel_label.T)
-print_metrics("Audio-Encoder Genre", sim_ae_genre.T, rel_label.T)
+for protocol_id, protocol_key, protocol_title, relevance in EVAL_PROTOCOLS:
+    _out(f"=== Protokoll {protocol_id}: {protocol_title} ===")
+    for direction, sim_getter, rel_getter in (
+        ("V2A", lambda s: s, lambda r: r),
+        ("A2V", lambda s: s.T, lambda r: r.T),
+    ):
+        dir_label = "V→A (Video als Query, Audio retrieval)" if direction == "V2A" else "A→V (Audio als Query, Video retrieval)"
+        _out(f"=== {dir_label} ===")
+        for model_key, model_name, sim in EVAL_MODELS:
+            _record_metrics(
+                protocol_id,
+                protocol_key,
+                direction,
+                model_key,
+                model_name,
+                sim_getter(sim),
+                rel_getter(relevance),
+            )
+        _out("")
 
-# Bei Pipeline: Evaluation-Ausgabe in denselben Run-Ordner schreiben
-if os.environ.get("TRAINING_RUN_DIR"):
-    out_path = Path(os.environ["TRAINING_RUN_DIR"]) / "evaluation_output.txt"
-    _out_lines.append("")
-    _out_lines.append("Gespeichert: " + str(out_path))
-    with open(out_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(_out_lines))
-    print("", flush=True)
-    print("Gespeichert: " + str(out_path), flush=True)
+def _eval_output_dir() -> Path:
+    if os.environ.get("TRAINING_RUN_DIR"):
+        return Path(os.environ["TRAINING_RUN_DIR"])
+    if os.environ.get("EVAL_OUTPUT_DIR"):
+        return Path(os.environ["EVAL_OUTPUT_DIR"])
+    if pair_run_dir:
+        return pair_run_dir
+    return config.TRAINING_RUNS_ROOT / f"evaluation_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
+
+
+output_dir = _eval_output_dir()
+output_dir.mkdir(parents=True, exist_ok=True)
+results_csv = output_dir / "results_evaluation.csv"
+save_evaluation_results_csv(results_rows, results_csv)
+
+eval_meta = {
+    "timestamp": datetime.now().isoformat(),
+    "git_commit_eval": config.get_git_commit(),
+    "dataset_run": run_name,
+    "n_test": len(test_ds),
+    "pair_head_path": str(pair_path or config.PROJECTION_HEADS_PATH),
+    "genre_head_path": str(genre_path or config.PROJECTION_HEADS_GENRE_PATH),
+    "audio_encoder_pair_path": str(ae_pair_path or ""),
+    "audio_encoder_genre_path": str(ae_genre_path or ""),
+    "pair_train_commit": _meta_commit(pair_run_dir, "meta_pair.json") or None,
+    "genre_train_commit": _meta_commit(genre_run_dir, "meta_genre.json") or None,
+    "results_csv": str(results_csv),
+}
+eval_meta_path = output_dir / "meta_evaluation.json"
+with open(eval_meta_path, "w", encoding="utf-8") as f:
+    json.dump(eval_meta, f, indent=2)
+
+_out(f"Metriken-CSV: {results_csv}")
+_out(f"Eval-Metadaten: {eval_meta_path}")
+
+out_path = output_dir / "evaluation_output.txt"
+_out_lines.append("")
+_out_lines.append("Gespeichert: " + str(out_path))
+with open(out_path, "w", encoding="utf-8") as f:
+    f.write("\n".join(_out_lines))
+print("", flush=True)
+print("Gespeichert: " + str(out_path), flush=True)
+print("Gespeichert: " + str(results_csv), flush=True)

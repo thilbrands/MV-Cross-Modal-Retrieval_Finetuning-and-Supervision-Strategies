@@ -19,6 +19,7 @@ sys.path.insert(0, str(_REPO_ROOT))
 import config
 from dataset import PairDataset
 from models import ProjectionHead
+from training_metrics import save_training_metrics_csv
 
 def _env_int(name: str, default: int) -> int:
     v = os.environ.get(name)
@@ -53,6 +54,7 @@ if os.environ.get("TRAINING_RUN_DIR"):
 else:
     training_run_dir = config.get_new_training_run_dir()
 CHECKPOINT_PATH = training_run_dir / "projection_heads_pair.pt"
+METRICS_CSV = training_run_dir / "results_pair.csv"
 
 batch_size = _env_int("HP_BATCH_SIZE", 1024)
 lr = _env_float("HP_LR", 1e-4)
@@ -79,6 +81,7 @@ opt = torch.optim.Adam(list(video_head.parameters()) + list(audio_head.parameter
 
 epochs_without_improvement = 0
 best_val = float("inf")
+metrics_history = []
 print(f"Dataset-Run: {run_name} | Train: {len(train_ds)} | Val: {len(val_ds)} | Epochs: {num_epochs} | Device: {DEVICE} | TRAIN_GENRES: {train_genres or 'alle'}", flush=True)
 print(f"Training-Run: {training_run_dir}", flush=True)
 print(f"Hyperparams: lr={lr} temp={temp} out_dim={out_dim} head_type={head_type} hidden_dim={hidden_dim} batch_size={batch_size} patience={patience} seed={seed}", flush=True)
@@ -115,7 +118,8 @@ for epoch in range(num_epochs):
             val_loss += ((infonce_loss(vp, ap, temp=temp) + infonce_loss(ap, vp, temp=temp)) / 2).item() * v.size(0)
     val_loss /= len(val_ds)
 
-    if val_loss < best_val:
+    is_best = val_loss < best_val
+    if is_best:
         best_val = val_loss
         epochs_without_improvement = 0
         torch.save(
@@ -124,6 +128,14 @@ for epoch in range(num_epochs):
         )
     else:
         epochs_without_improvement += 1
+    metrics_history.append({
+        "epoch": epoch + 1,
+        "train_loss": train_loss,
+        "val_loss": val_loss,
+        "best_val": best_val,
+        "is_best": int(is_best),
+        "epochs_without_improvement": epochs_without_improvement,
+    })
     print(f"Epoch {epoch+1}/{num_epochs}  train={train_loss:.4f}  val={val_loss:.4f}  best_val={best_val:.4f}", flush=True)
     if epochs_without_improvement >= patience:
         print(f"Early stopping at epoch {epoch+1} (patience={patience}).", flush=True)
@@ -149,7 +161,10 @@ meta = {
     },
 }
 meta_file = "meta_pair.json" if os.environ.get("TRAINING_RUN_DIR") else "meta.json"
+meta["metrics_csv"] = str(METRICS_CSV)
 with open(training_run_dir / meta_file, "w", encoding="utf-8") as f:
     json.dump(meta, f, indent=2)
 
+save_training_metrics_csv(metrics_history, METRICS_CSV)
 print(f"Gespeichert: {CHECKPOINT_PATH}", flush=True)
+print(f"Metriken: {METRICS_CSV}", flush=True)

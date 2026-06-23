@@ -25,6 +25,7 @@ sys.path.insert(0, str(_REPO_ROOT))
 import config
 from dataset import RawAudioPairDataset
 from models import ProjectionHead, load_wav2clip_finetune
+from training_metrics import save_training_metrics_csv
 
 
 def _env_int(name: str, default: int) -> int:
@@ -60,6 +61,7 @@ if os.environ.get("TRAINING_RUN_DIR"):
 else:
     training_run_dir = config.get_new_training_run_dir()
 CHECKPOINT_PATH = training_run_dir / "audio_encoder_genre.pt"
+METRICS_CSV = training_run_dir / "results_audio_encoder_genre.csv"
 
 batch_size = _env_int("HP_BATCH_SIZE", 128)
 lr = _env_float("HP_LR", 1e-3)
@@ -137,6 +139,7 @@ def genre_supcon_loss(v_proj, a_proj, labels, temp: float = 0.07):
 
 epochs_without_improvement = 0
 best_val = float("inf")
+metrics_history = []
 
 for epoch in range(num_epochs):
     video_head.train()
@@ -166,7 +169,8 @@ for epoch in range(num_epochs):
             val_loss += genre_supcon_loss(vp, ap, labels, temp=temp).item() * v.size(0)
     val_loss /= len(val_ds)
 
-    if val_loss < best_val:
+    is_best = val_loss < best_val
+    if is_best:
         best_val = val_loss
         epochs_without_improvement = 0
         torch.save(
@@ -180,6 +184,14 @@ for epoch in range(num_epochs):
         )
     else:
         epochs_without_improvement += 1
+    metrics_history.append({
+        "epoch": epoch + 1,
+        "train_loss": train_loss,
+        "val_loss": val_loss,
+        "best_val": best_val,
+        "is_best": int(is_best),
+        "epochs_without_improvement": epochs_without_improvement,
+    })
     print(f"Epoch {epoch+1}/{num_epochs}  train={train_loss:.4f}  val={val_loss:.4f}  best_val={best_val:.4f}", flush=True)
     if epochs_without_improvement >= patience:
         print(f"Early stopping at epoch {epoch+1} (patience={patience}).", flush=True)
@@ -205,10 +217,13 @@ meta = {
     },
 }
 meta_file = "meta_audio_encoder_genre.json" if os.environ.get("TRAINING_RUN_DIR") else "meta.json"
+meta["metrics_csv"] = str(METRICS_CSV)
 with open(training_run_dir / meta_file, "w", encoding="utf-8") as f:
     json.dump(meta, f, indent=2)
 
+save_training_metrics_csv(metrics_history, METRICS_CSV)
 print(f"Gespeichert: {CHECKPOINT_PATH}", flush=True)
+print(f"Metriken: {METRICS_CSV}", flush=True)
 
 print("Berechne Test-Embeddings …", flush=True)
 ckpt = torch.load(CHECKPOINT_PATH, map_location=DEVICE)
