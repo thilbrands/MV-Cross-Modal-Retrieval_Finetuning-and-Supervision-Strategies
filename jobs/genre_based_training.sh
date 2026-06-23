@@ -39,13 +39,13 @@ echo "DATASET_RUN_NAME: ${DATASET_RUN_NAME:-<neuester Run>}"
 echo "Starte pipeline/genre_based_training.py …"
 
 export PYTHONUNBUFFERED=1
-# Defaults aus Tuning Trial 70 (tuning_genre_2026-06-15_10-28-04)
+# Defaults aus Tuning Trial 92 (tuning_genre_2026-06-22_18-36-29)
 export HP_LR="${HP_LR:-1e-3}"
-export HP_OUT_DIM="${HP_OUT_DIM:-256}"
-export HP_TEMP="${HP_TEMP:-1.5}"
-export HP_HEAD_TYPE="${HP_HEAD_TYPE:-mlp}"
-export HP_HIDDEN_DIM="${HP_HIDDEN_DIM:-512}"
-export HP_BATCH_SIZE="${HP_BATCH_SIZE:-64}"
+export HP_OUT_DIM="${HP_OUT_DIM:-512}"
+export HP_TEMP="${HP_TEMP:-1.7}"
+export HP_HEAD_TYPE="${HP_HEAD_TYPE:-linear}"
+export HP_HIDDEN_DIM="${HP_HIDDEN_DIM:-32}"
+export HP_BATCH_SIZE="${HP_BATCH_SIZE:-128}"
 export HP_MAX_EPOCHS="${HP_MAX_EPOCHS:-20}"
 export HP_PATIENCE="${HP_PATIENCE:-3}"
 export HP_SEED="${HP_SEED:-42}"
