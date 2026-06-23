@@ -116,7 +116,7 @@ def main():
         raise RuntimeError("DATASET_RUN_NAME nicht gesetzt und kein Dataset-Run gefunden.")
 
     lr_values = [1e-3, 1e-4, 1e-5]
-    out_dims = [64, 128, 256, 512] if training_type == "pair" else [512]
+    out_dims = [64, 128, 256, 512]
     temps = [0.9, 1.0, 1.5, 1.7, 2.0, 2.3, 2.5]
     head_types = ["linear", "mlp"]
     batch_sizes = [64, 128, 256, 512, 1024]
