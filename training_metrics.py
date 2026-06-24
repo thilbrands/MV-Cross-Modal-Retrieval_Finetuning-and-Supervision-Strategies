@@ -24,6 +24,23 @@ EVALUATION_FIELDS = [
     "mean_rank",
 ]
 
+GENRE_BREAKDOWN_FIELDS = [
+    "model_key",
+    "model",
+    "protocol",
+    "protocol_name",
+    "direction",
+    "row_type",
+    "genre",
+    "is_seen",
+    "n",
+    "mrr",
+    "recall_at_1",
+    "recall_at_5",
+    "recall_at_10",
+    "mean_rank",
+]
+
 
 def save_training_metrics_csv(rows: list[dict], path: Path) -> None:
     path = Path(path)
@@ -39,5 +56,14 @@ def save_evaluation_results_csv(rows: list[dict], path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=EVALUATION_FIELDS)
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def save_genre_breakdown_csv(rows: list[dict], path: Path) -> None:
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=GENRE_BREAKDOWN_FIELDS)
         writer.writeheader()
         writer.writerows(rows)

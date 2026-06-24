@@ -1,8 +1,8 @@
 #!/bin/bash
 #
 # Slurm-Job: E4-Interpolation — Training auf 7 Genres, Evaluation auf allen 10.
-# Unseen Genres (dichtester Cluster, schwerster Interpolationstest): Blues, Funk, Jazz.
-# Seen Genres (Training): Classical music, Country, Electronic music, Hip hop music, Pop music, Reggae, Rock music.
+# Unseen Genres (Interpolation): Electronic music, Funk, Reggae.
+# Seen Genres (Training): Blues, Classical music, Country, Hip hop music, Jazz, Pop music, Rock music.
 #
 #SBATCH --job-name=e4_interpolation
 #SBATCH --partition=paula
@@ -36,8 +36,8 @@ export TRAINING_RUN_DIR="/work2/ra39oxet-DatasetAudioSetSubset/training_runs/e4_
 mkdir -p "$TRAINING_RUN_DIR"
 mkdir -p "/work2/ra39oxet-DatasetAudioSetSubset/logs"
 
-# 7 Trainings-Genres — Unseen: Blues, Funk, Jazz (dichtester Cluster)
-export TRAIN_GENRES="Classical music,Country,Electronic music,Hip hop music,Pop music,Reggae,Rock music"
+# 7 Trainings-Genres — Unseen: Electronic music, Funk, Reggae
+export TRAIN_GENRES="Blues,Classical music,Country,Hip hop music,Jazz,Pop music,Rock music"
 
 echo "Dataset-Run:      $DATASET_RUN_NAME"
 echo "Training-Run-Dir: $TRAINING_RUN_DIR"

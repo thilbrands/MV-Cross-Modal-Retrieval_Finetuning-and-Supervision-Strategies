@@ -1,7 +1,7 @@
 """
 Grid-Tuning für Pair- und Genre-Training mit task-aligned Selection:
-- pair  -> Protokoll A (Recall@10 avg V->A/A->V)
-- genre -> Protokoll B (Recall@10 avg V->A/A->V); out_dim fest 512
+- pair  -> Protokoll A (Recall@10 avg V->A/A->V); τ ∈ {0.07, 0.1, 0.3, 0.5, 0.7}
+- genre -> Protokoll B (Recall@10 avg V->A/A->V); τ ∈ {0.9, …, 2.5}
 
 Nutzung:
   TRAINING_TYPE=pair  python -m pipeline.tune_hyperparams
@@ -117,7 +117,11 @@ def main():
 
     lr_values = [1e-3, 1e-4, 1e-5]
     out_dims = [64, 128, 256, 512]
-    temps = [0.9, 1.0, 1.5, 1.7, 2.0, 2.3, 2.5]
+    temps = (
+        [0.07, 0.1, 0.3, 0.5, 0.7]
+        if training_type == "pair"
+        else [0.9, 1.0, 1.5, 1.7, 2.0, 2.3, 2.5]
+    )
     head_types = ["linear", "mlp"]
     batch_sizes = [64, 128, 256, 512, 1024]
     hidden_dims = [32, 64, 128, 256, 512]
@@ -145,7 +149,7 @@ def main():
         if head_type == "mlp" or hidden_dim == hidden_dims[0]
     ]
     print(
-        f"Starte Tuning: type={training_type} | out_dims={out_dims} | combos={len(combos)} | "
+        f"Starte Tuning: type={training_type} | out_dims={out_dims} | temps={temps} | combos={len(combos)} | "
         f"workers={workers} | dataset_run={run_name}",
         flush=True,
     )
