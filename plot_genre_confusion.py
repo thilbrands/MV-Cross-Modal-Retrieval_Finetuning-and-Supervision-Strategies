@@ -26,7 +26,7 @@ import torch.nn.functional as F
 _REPO_ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(_REPO_ROOT))
 import config
-from models import load_audio_encoder_heads_pair
+from models import load_audio_encoder_heads_pair, load_audio_encoder_heads_genre
 
 GENRES = [
     "Blues", "Classical music", "Country", "Electronic music", "Funk",
@@ -49,15 +49,22 @@ ae_pair_path = (
     else Path(os.environ["TRAINING_RUN_DIR"]) if os.environ.get("TRAINING_RUN_DIR")
     else config.get_latest_training_run_with("audio_encoder_pair.pt")
 )
-if not ae_pair_path:
-    print("FEHLER: AE-Pair-Run nicht gefunden. AE_PAIR_RUN_DIR / TRAINING_RUN_DIR setzen.", flush=True)
+ae_genre_path = (
+    Path(os.environ["AE_GENRE_RUN_DIR"]) if os.environ.get("AE_GENRE_RUN_DIR")
+    else Path(os.environ["TRAINING_RUN_DIR"]) if os.environ.get("TRAINING_RUN_DIR")
+    else config.get_latest_training_run_with("audio_encoder_genre.pt")
+)
+if not ae_pair_path or not ae_genre_path:
+    print("FEHLER: AE-Run nicht gefunden. AE_PAIR_RUN_DIR / AE_GENRE_RUN_DIR / TRAINING_RUN_DIR setzen.", flush=True)
     sys.exit(1)
 
 ae_pair_emb_dir = ae_pair_path / "audio_encoder_pair_test_embeddings"
+ae_genre_emb_dir = ae_genre_path / "audio_encoder_genre_test_embeddings"
 for label, p in [
     ("Dataset embeddings/video", embeddings_dir / "video"),
     ("Dataset embeddings/audio", embeddings_dir / "audio"),
     ("AE-Pair Test-Embeddings", ae_pair_emb_dir),
+    ("AE-Genre Test-Embeddings", ae_genre_emb_dir),
     ("Split-CSV", split_csv),
 ]:
     if not p.exists():
@@ -74,15 +81,17 @@ with open(split_csv, "r", newline="", encoding="utf-8") as f:
         v_path = embeddings_dir / "video" / f"{video_id}.npy"
         a_path = embeddings_dir / "audio" / f"{video_id}.npy"
         ae_pair_emb = ae_pair_emb_dir / f"{video_id}.npy"
-        if v_path.exists() and a_path.exists() and ae_pair_emb.exists():
-            samples.append((video_id, label, v_path, a_path, ae_pair_emb))
+        ae_genre_emb = ae_genre_emb_dir / f"{video_id}.npy"
+        if v_path.exists() and a_path.exists() and ae_pair_emb.exists() and ae_genre_emb.exists():
+            samples.append((video_id, label, v_path, a_path, ae_pair_emb, ae_genre_emb))
 
 if not samples:
     print("FEHLER: Keine Test-Samples mit allen Embeddings gefunden.", flush=True)
     sys.exit(1)
 
-print(f"Dataset-Run: {run_name}", flush=True)
-print(f"AE-Pair-Run: {ae_pair_path}", flush=True)
+print(f"Dataset-Run:  {run_name}", flush=True)
+print(f"AE-Pair-Run:  {ae_pair_path}", flush=True)
+print(f"AE-Genre-Run: {ae_genre_path}", flush=True)
 print(f"Test-Samples: {len(samples)}", flush=True)
 
 genre_to_idx = {g: i for i, g in enumerate(GENRES)}
@@ -95,8 +104,10 @@ label_idx = np.array([genre_to_idx.get(l, -1) for l in labels])
 V = torch.tensor(np.stack([np.load(s[2]) for s in samples]), dtype=torch.float32, device=config.DEVICE)
 A = torch.tensor(np.stack([np.load(s[3]) for s in samples]), dtype=torch.float32, device=config.DEVICE)
 A_ae_pair = torch.tensor(np.stack([np.load(s[4]) for s in samples]), dtype=torch.float32, device=config.DEVICE)
+A_ae_genre = torch.tensor(np.stack([np.load(s[5]) for s in samples]), dtype=torch.float32, device=config.DEVICE)
 
 video_head_ae_pair, audio_head_ae_pair = load_audio_encoder_heads_pair(ae_pair_path)
+video_head_ae_genre, audio_head_ae_genre = load_audio_encoder_heads_genre(ae_genre_path)
 
 
 def _top1_audio_idx(video, audio, video_head=None, audio_head=None):
@@ -125,13 +136,15 @@ def _confusion(top1_idx):
 
 cm_baseline = _confusion(_top1_audio_idx(V, A))
 cm_e3a = _confusion(_top1_audio_idx(V, A_ae_pair, video_head_ae_pair, audio_head_ae_pair))
+cm_e3b = _confusion(_top1_audio_idx(V, A_ae_genre, video_head_ae_genre, audio_head_ae_genre))
 
-for title, cm in [("Baseline", cm_baseline), ("E3a", cm_e3a)]:
+panels = [("(a) Baseline", cm_baseline), ("(b) E3a", cm_e3a), ("(c) E3b", cm_e3b)]
+for title, cm in panels:
     diag = np.mean([cm[i, i] for i in range(len(GENRES))])
     print(f"{title}: mittlere Diagonale (korrekt) = {diag:.1f}%", flush=True)
 
-fig, (ax1, ax2, cax) = plt.subplots(
-    1, 3, figsize=(13, 5.4), gridspec_kw={"width_ratios": [1, 1, 0.04]}
+fig, (ax1, ax2, ax3, cax) = plt.subplots(
+    1, 4, figsize=(18, 5.4), gridspec_kw={"width_ratios": [1, 1, 1, 0.03]}
 )
 heatmap_kwargs = dict(
     vmin=0, vmax=100, cmap="YlOrRd", annot=True, fmt=".0f",
@@ -139,10 +152,10 @@ heatmap_kwargs = dict(
     xticklabels=GENRE_LABELS, yticklabels=GENRE_LABELS,
 )
 
-sns.heatmap(cm_baseline, ax=ax1, cbar=False, **heatmap_kwargs)
-sns.heatmap(cm_e3a, ax=ax2, cbar=True, cbar_ax=cax, **heatmap_kwargs)
-
-for ax, title in [(ax1, "(a) Baseline"), (ax2, "(b) E3a")]:
+axes = [ax1, ax2, ax3]
+for i, (ax, (title, cm)) in enumerate(zip(axes, panels)):
+    is_last = i == len(axes) - 1
+    sns.heatmap(cm, ax=ax, cbar=is_last, cbar_ax=cax if is_last else None, **heatmap_kwargs)
     ax.set_title(title, fontsize=10)
     ax.set_xlabel("Retrieved audio genre", fontsize=10)
     ax.tick_params(axis="both", labelsize=8)
@@ -151,6 +164,7 @@ for ax, title in [(ax1, "(a) Baseline"), (ax2, "(b) E3a")]:
 
 ax1.set_ylabel("Query genre (video)", fontsize=10)
 ax2.set_ylabel("")
+ax3.set_ylabel("")
 cax.tick_params(labelsize=8)
 cax.set_ylabel("Row %", fontsize=9)
 

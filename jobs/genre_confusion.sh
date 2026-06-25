@@ -1,11 +1,11 @@
 #!/bin/bash
 #
-# Slurm-Job: Genre-Confusion-Matrix (V→A Top-1) für Baseline + E3a.
+# Slurm-Job: Genre-Confusion-Matrix (V→A Top-1) für Baseline + E3a + E3b.
 # Speichert genre_confusion.pdf/.png im Dataset-Run-Ordner.
 #
 # Nutzung (vom Repo-Root auf dem Cluster):
 #   sbatch jobs/genre_confusion.sh
-#   sbatch --export=DATASET_RUN_NAME=2026-05-26_15-59-27_audioset,AE_PAIR_RUN_DIR=/work2/ra39oxet-DatasetAudioSetSubset/training_runs/2026-06-24_17-10 jobs/genre_confusion.sh
+#   sbatch --export=DATASET_RUN_NAME=2026-05-26_15-59-27_audioset,TRAINING_RUN_DIR=/work2/ra39oxet-DatasetAudioSetSubset/training_runs/2026-06-24_17-10 jobs/genre_confusion.sh
 #
 
 #SBATCH --job-name=genre_confusion
@@ -37,6 +37,7 @@ echo "Hostname: $(hostname)"
 echo "Slurm Job ID: $SLURM_JOB_ID"
 echo "DATASET_RUN_NAME: ${DATASET_RUN_NAME:-<neuester Run>}"
 echo "AE_PAIR_RUN_DIR:  ${AE_PAIR_RUN_DIR:-${TRAINING_RUN_DIR:-<neuester Run mit audio_encoder_pair.pt>}}"
+echo "AE_GENRE_RUN_DIR: ${AE_GENRE_RUN_DIR:-${TRAINING_RUN_DIR:-<neuester Run mit audio_encoder_genre.pt>}}"
 echo "Starte plot_genre_confusion.py …"
 
 export PYTHONUNBUFFERED=1
