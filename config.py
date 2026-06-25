@@ -67,19 +67,32 @@ def get_new_training_run_dir() -> Path:
     return run_dir
 
 
+def _run_name_sort_key(path: Path) -> tuple:
+    """Sort key: Timestamp aus Ordnernamen (YYYY-MM-DD_HH-MM-SS), sonst mtime."""
+    from datetime import datetime
+
+    parts = path.name.split("_")
+    if len(parts) >= 2:
+        try:
+            ts = datetime.strptime(f"{parts[0]}_{parts[1]}", "%Y-%m-%d_%H-%M-%S")
+            return (1, ts.timestamp(), path.stat().st_mtime)
+        except ValueError:
+            pass
+    return (0, path.stat().st_mtime, 0.0)
+
+
 def get_latest_run_name() -> Optional[str]:
     """
-    Name des zuletzt erstellten/geänderten Dataset-Runs (Ordner unter DATASETS_ROOT).
-    Nutzbar als Default für Extract und (später) Training, wenn DATASET_RUN_NAME
-    nicht gesetzt ist.
-    """
+    Name des neuesten Dataset-Runs unter DATASETS_ROOT.
+    Primär nach Timestamp im Ordnernamen (YYYY-MM-DD_HH-MM-SS_audioset),
+    nicht nach Dateisystem-mtime (sonst kann ein alter Run durch spätere Jobs „neu“ wirken).
+  """
     if not DATASETS_ROOT.exists():
         return None
     runs = [p for p in DATASETS_ROOT.iterdir() if p.is_dir()]
     if not runs:
         return None
-    # Neuester zuerst (nach mtime)
-    runs.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+    runs.sort(key=_run_name_sort_key, reverse=True)
     return runs[0].name
 
 
