@@ -189,7 +189,7 @@ def _print_protocol(
     protocol: str,
     protocol_name: str,
 ) -> Dict:
-    """Gibt eine Protokoll-Tabelle aus und gibt Seen/Unseen/Gesamt-MRR je Richtung zurück."""
+    """Gibt eine Protokoll-Tabelle aus und gibt Seen/Unseen/Total-MRR je Richtung zurück."""
     _out(f"\n  [ {prot_label} ]")
     header = f"  {'Genre':<20} {'Seen':>5}  {'N':>5}  {'MRR':>6}  {'R@1':>6}  {'R@5':>6}  {'R@10':>6}  {'MRank':>7}"
     sep = "  " + "-" * 68
@@ -235,7 +235,7 @@ def _print_protocol(
             av = _avg_metrics({k: seen_vals[k] + unseen_vals[k] for k in seen_vals})
             _out(f"  {'Seen Ø (7)':<20} {'':>5}  {'':>5}  {sv['mrr']:>6.3f}  {sv['r1']:>6.3f}  {sv['r5']:>6.3f}  {sv['r10']:>6.3f}  {sv['mr']:>7.1f}")
             _out(f"  {'Unseen Ø (3)':<20} {'':>5}  {'':>5}  {uv['mrr']:>6.3f}  {uv['r1']:>6.3f}  {uv['r5']:>6.3f}  {uv['r10']:>6.3f}  {uv['mr']:>7.1f}")
-            _out(f"  {'Gesamt Ø':<20} {'':>5}  {'':>5}  {av['mrr']:>6.3f}  {av['r1']:>6.3f}  {av['r5']:>6.3f}  {av['r10']:>6.3f}  {av['mr']:>7.1f}")
+            _out(f"  {'Total Ø':<20} {'':>5}  {'':>5}  {av['mrr']:>6.3f}  {av['r1']:>6.3f}  {av['r5']:>6.3f}  {av['r10']:>6.3f}  {av['mr']:>7.1f}")
             breakdown_rows.append(
                 _metric_row(model_key, model, protocol, protocol_name, direction_key, "seen_mean", "", "", sv)
             )
@@ -245,7 +245,7 @@ def _print_protocol(
             breakdown_rows.append(
                 _metric_row(model_key, model, protocol, protocol_name, direction_key, "overall_mean", "", "", av)
             )
-            result[direction_key] = {"seen": sv["mrr"], "unseen": uv["mrr"], "gesamt": av["mrr"]}
+            result[direction_key] = {"seen": sv["mrr"], "unseen": uv["mrr"], "total": av["mrr"]}
 
     return result
 
@@ -262,7 +262,7 @@ def print_breakdown(model_key: str, title: str, sim_va: torch.Tensor, sim_av: to
         "Protokoll B: Label-basiert (gleiches Genre)", "B", "label",
     )
     if seen_genres is not None:
-        _plot_data[title] = {"A": res_a, "B": res_b}
+        _plot_data[model_key] = {"A": res_a, "B": res_b}
 
 _out(f"Dataset-Run:      {run_name}")
 _out(f"Training-Run-Dir: {shared_run_dir or '-'}")
@@ -278,60 +278,86 @@ if sim_ae_pair is not None:
 if sim_ae_genre is not None:
     print_breakdown("audio_encoder_genre", "Audio-Encoder Genre", sim_ae_genre, sim_ae_genre.T)
 
-# --- Plot: Seen Ø vs. Unseen Ø MRR (alle Modelle, beide Protokolle) ---
+# --- Plot: Protocol B — Seen / Unseen / Overall MRR (E4 generalization) ---
+_PLOT_MODEL_ORDER = [
+    ("baseline", "Baseline"),
+    ("pair", "E1"),
+    ("genre", "E2"),
+    ("audio_encoder_pair", "E3a"),
+    ("audio_encoder_genre", "E3b"),
+]
+_BAR_GROUPS = [
+    ("seen", "Seen avg.", "#2166ac"),
+    ("unseen", "Unseen avg.", "#d95f02"),
+    ("total", "Overall avg.", "#55A868"),
+]
+
+
+def _style_bar_axis(ax, ylabel: str) -> None:
+    ax.set_ylabel(ylabel, fontsize=10)
+    ax.tick_params(axis="both", labelsize=9)
+    ax.grid(which="major", axis="y", linestyle="-", linewidth=0.4, alpha=0.5)
+    for spine in ax.spines.values():
+        spine.set_linewidth(0.6)
+        spine.set_color("#666666")
+    ax.legend(fontsize=7.5, frameon=True, framealpha=0.9, edgecolor="#cccccc")
+
+
 if seen_genres is not None and _plot_data and os.environ.get("TRAINING_RUN_DIR"):
     try:
         import matplotlib
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
-        models = list(_plot_data.keys())
-        short_names = [
-            m.replace("Audio-Encoder", "AE").replace(" (kein Head)", "").replace(" Heads", "")
-            for m in models
-        ]
-        x = np.arange(len(models))
-        width = 0.25
+        plot_models = [(k, label) for k, label in _PLOT_MODEL_ORDER if k in _plot_data]
+        if plot_models:
+            model_keys, model_labels = zip(*plot_models)
+            x = np.arange(len(model_keys))
+            bar_width = 0.22
+            offsets = [-bar_width, 0.0, bar_width]
 
-        unseen_genres = sorted(g for g in all_genres if g not in seen_genres)
-        seen_genres_sorted = sorted(seen_genres)
-        subtitle_seen   = "Seen:   " + ", ".join(seen_genres_sorted)
-        subtitle_unseen = "Unseen: " + ", ".join(unseen_genres)
+            fig, axes = plt.subplots(1, 2, figsize=(7, 3.5))
+            plot_configs = [
+                ("V2A", axes[0], "V→A"),
+                ("A2V", axes[1], "A→V"),
+            ]
 
-        fig, axes = plt.subplots(2, 2, figsize=(14, 10))
-        fig.suptitle(
-            f"Seen Ø vs. Unseen Ø — MRR pro Modell\n{subtitle_seen}\n{subtitle_unseen}",
-            fontsize=11,
-        )
+            for direction_key, ax, title in plot_configs:
+                panel_vals = []
+                for model_key in model_keys:
+                    direction_data = _plot_data[model_key]["B"].get(direction_key, {})
+                    for bucket_key, _, _ in _BAR_GROUPS:
+                        panel_vals.append(direction_data.get(bucket_key, 0.0))
 
-        plot_configs = [
-            ("A", "V2A", axes[0, 0], "Protokoll A — V→A"),
-            ("A", "A2V", axes[0, 1], "Protokoll A — A→V"),
-            ("B", "V2A", axes[1, 0], "Protokoll B — V→A"),
-            ("B", "A2V", axes[1, 1], "Protokoll B — A→V"),
-        ]
+                for i, (bucket_key, bucket_label, color) in enumerate(_BAR_GROUPS):
+                    vals = [
+                        _plot_data[m]["B"].get(direction_key, {}).get(bucket_key, 0.0)
+                        for m in model_keys
+                    ]
+                    ax.bar(
+                        x + offsets[i],
+                        vals,
+                        bar_width,
+                        label=bucket_label,
+                        color=color,
+                        edgecolor="white",
+                        linewidth=0.6,
+                    )
 
-        for prot, direction, ax, subtitle in plot_configs:
-            seen_vals   = [_plot_data[m][prot].get(direction, {}).get("seen",   0.0) for m in models]
-            unseen_vals = [_plot_data[m][prot].get(direction, {}).get("unseen", 0.0) for m in models]
-            gesamt_vals = [_plot_data[m][prot].get(direction, {}).get("gesamt", 0.0) for m in models]
+                ax.set_title(f"Protocol B — {title}", fontsize=10)
+                ax.set_xticks(x)
+                ax.set_xticklabels(model_labels, fontsize=9)
+                ymax = max(panel_vals) * 1.12 if panel_vals else 1.0
+                ax.set_ylim(0, ymax)
+                _style_bar_axis(ax, "MRR")
 
-            ax.bar(x - width, seen_vals,   width, label="Seen Ø",   color="#4C72B0")
-            ax.bar(x,         unseen_vals, width, label="Unseen Ø", color="#DD8452")
-            ax.bar(x + width, gesamt_vals, width, label="Gesamt Ø", color="#55A868")
-            ax.set_title(subtitle)
-            ax.set_xticks(x)
-            ax.set_xticklabels(short_names, fontsize=8)
-            ax.set_ylabel("MRR")
-            ax.set_ylim(0, 1)
-            ax.legend(fontsize=8)
-            ax.grid(axis="y", alpha=0.3)
-
-        plt.tight_layout()
-        plot_path = Path(os.environ["TRAINING_RUN_DIR"]) / "genre_breakdown_plot.png"
-        plt.savefig(plot_path, dpi=150)
-        plt.close()
-        print(f"\nPlot gespeichert: {plot_path}", flush=True)
+            fig.tight_layout()
+            plot_base = Path(os.environ["TRAINING_RUN_DIR"]) / "genre_breakdown_plot"
+            fig.savefig(f"{plot_base}.pdf", bbox_inches="tight")
+            fig.savefig(f"{plot_base}.png", dpi=300, bbox_inches="tight")
+            plt.close(fig)
+            print(f"\nPlot gespeichert: {plot_base}.pdf", flush=True)
+            print(f"Plot gespeichert: {plot_base}.png", flush=True)
     except Exception as e:
         print(f"Plot fehlgeschlagen: {e}", flush=True)
 
