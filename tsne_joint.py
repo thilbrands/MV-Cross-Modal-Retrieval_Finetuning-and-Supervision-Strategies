@@ -1,17 +1,21 @@
 """
-t-SNE-Vergleich: E1, E2, E3a, E3b — Video- und Audio-Embeddings (Test-Split).
-Layout und Stil wie tsne_baseline.py (2 Zeilen × 4 Modelle).
-Speichert tsne_comparison.pdf im Dataset-Run-Ordner.
+Gemeinsames t-SNE pro Modell: Video- UND Audio-Embeddings in EINEM t-SNE-Raum.
+Farbe = Genre, Marker = Modalität (Kreis = Video, Dreieck = Audio).
+So ist „liegen Video und Audio am selben Ort?" tatsächlich interpretierbar.
 
-Run: python3 tsne_embeddings.py
-     TRAINING_RUN_DIR=... python3 tsne_embeddings.py
-     AE_PAIR_RUN_DIR=... AE_GENRE_RUN_DIR=... python3 tsne_embeddings.py
+Eine Zeile, vier Modelle (E1, E2, E3a, E3b). Test-Split.
+Speichert tsne_joint.pdf im Dataset-Run-Ordner.
+
+Run: python3 tsne_joint.py
+     TRAINING_RUN_DIR=... AE_PAIR_RUN_DIR=... AE_GENRE_RUN_DIR=... python3 tsne_joint.py
 """
 import csv
 import os
 import sys
 from pathlib import Path
 
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -107,13 +111,6 @@ video_head_ae_pair, audio_head_ae_pair = load_audio_encoder_heads_pair(ae_pair_p
 video_head_ae_genre, audio_head_ae_genre = load_audio_encoder_heads_genre(ae_genre_path)
 
 
-def _project(video_head, audio_head, video, audio):
-    with torch.no_grad():
-        v = F.normalize(video_head(video), p=2, dim=-1).cpu().numpy()
-        a = F.normalize(audio_head(audio), p=2, dim=-1).cpu().numpy()
-    return v, a
-
-
 def _project_video(video_head, video):
     with torch.no_grad():
         return F.normalize(video_head(video), p=2, dim=-1).cpu().numpy()
@@ -124,18 +121,11 @@ def _project_audio(audio_head, audio):
         return F.normalize(audio_head(audio), p=2, dim=-1).cpu().numpy()
 
 
-v_e1, a_e1 = _project(video_head_pair, audio_head_pair, V, A)
-v_e2, a_e2 = _project(video_head_genre, audio_head_genre, V, A)
-v_e3a = _project_video(video_head_ae_pair, V)
-a_e3a = _project_audio(audio_head_ae_pair, A_ae_pair)
-v_e3b = _project_video(video_head_ae_genre, V)
-a_e3b = _project_audio(audio_head_ae_genre, A_ae_genre)
-
 model_embeddings = [
-    ("E1", v_e1, a_e1),
-    ("E2", v_e2, a_e2),
-    ("E3a", v_e3a, a_e3a),
-    ("E3b", v_e3b, a_e3b),
+    ("E1", _project_video(video_head_pair, V), _project_audio(audio_head_pair, A)),
+    ("E2", _project_video(video_head_genre, V), _project_audio(audio_head_genre, A)),
+    ("E3a", _project_video(video_head_ae_pair, V), _project_audio(audio_head_ae_pair, A_ae_pair)),
+    ("E3b", _project_video(video_head_ae_genre, V), _project_audio(audio_head_ae_genre, A_ae_genre)),
 ]
 
 
@@ -143,39 +133,38 @@ def compute_tsne(embs):
     return TSNE(n_components=2, random_state=42, perplexity=30).fit_transform(embs)
 
 
-def _plot_panel(ax, coords, title):
+print("Berechne gemeinsame t-SNE …", flush=True)
+n = len(samples)
+fig, axes = plt.subplots(1, 4, figsize=(40, 11))
+for ax, (name, video_embs, audio_embs) in zip(axes, model_embeddings):
+    joint = np.concatenate([video_embs, audio_embs], axis=0)
+    coords = compute_tsne(joint)
+    v_coords, a_coords = coords[:n], coords[n:]
     for label in unique_labels:
         idx = [i for i, sample_label in enumerate(labels) if sample_label == label]
-        ax.scatter(
-            coords[idx, 0],
-            coords[idx, 1],
-            c=[label_to_color[label]],
-            label=label,
-            s=20,
-            alpha=0.7,
-        )
-    ax.set_title(title, fontsize=22)
+        ax.scatter(v_coords[idx, 0], v_coords[idx, 1], c=[label_to_color[label]], marker="o", s=22, alpha=0.7, linewidths=0)
+        ax.scatter(a_coords[idx, 0], a_coords[idx, 1], c=[label_to_color[label]], marker="^", s=22, alpha=0.7, linewidths=0)
+    ax.set_title(name, fontsize=22)
     ax.axis("off")
 
-
-print("Berechne t-SNE …", flush=True)
-fig, axes = plt.subplots(2, 4, figsize=(40, 16))
-for col, (name, video_embs, audio_embs) in enumerate(model_embeddings):
-    _plot_panel(axes[0, col], compute_tsne(video_embs), f"{name} (video)")
-    _plot_panel(axes[1, col], compute_tsne(audio_embs), f"{name} (audio)")
-
 for x in (0.25, 0.5, 0.75):
-    fig.add_artist(plt.Line2D([x, x], [0.05, 0.95], transform=fig.transFigure, color="grey", linewidth=0.8))
-fig.add_artist(plt.Line2D([0.05, 0.95], [0.5, 0.5], transform=fig.transFigure, color="grey", linewidth=0.8))
+    fig.add_artist(plt.Line2D([x, x], [0.12, 0.92], transform=fig.transFigure, color="grey", linewidth=0.8))
 
-handles = [
+genre_handles = [
     plt.Line2D([0], [0], marker="o", color="w", markerfacecolor=label_to_color[label], markersize=16, label=label)
     for label in unique_labels
 ]
-fig.legend(handles=handles, loc="lower center", ncol=5, fontsize=18, bbox_to_anchor=(0.5, -0.05))
+modality_handles = [
+    plt.Line2D([0], [0], marker="o", color="w", markerfacecolor="#444444", markersize=16, label="Video"),
+    plt.Line2D([0], [0], marker="^", color="w", markerfacecolor="#444444", markersize=16, label="Audio"),
+]
 
-plt.tight_layout()
-out_path = run_dir / "tsne_comparison.pdf"
+legend_genre = fig.legend(handles=genre_handles, loc="lower center", ncol=5, fontsize=16, bbox_to_anchor=(0.5, -0.02), title="Genre")
+fig.add_artist(legend_genre)
+fig.legend(handles=modality_handles, loc="lower center", ncol=2, fontsize=16, bbox_to_anchor=(0.5, 0.08), title="Modalität")
+
+plt.tight_layout(rect=[0, 0.12, 1, 1])
+out_path = run_dir / "tsne_joint.pdf"
 plt.savefig(out_path, dpi=300, bbox_inches="tight")
 plt.close()
 print(f"Gespeichert: {out_path}", flush=True)
