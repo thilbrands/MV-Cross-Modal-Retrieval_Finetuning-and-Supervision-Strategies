@@ -116,7 +116,6 @@ rel_label = label_relevance_matrix(labels)
 
 # --- Genre-Breakdown ---
 _out_lines: List[str] = []
-_plot_data: Dict[str, Dict] = {}
 breakdown_rows: List[dict] = []
 
 def _out(s: str) -> None:
@@ -253,16 +252,14 @@ def print_breakdown(model_key: str, title: str, sim_va: torch.Tensor, sim_av: to
     _out(f"\n{'='*70}")
     _out(f"  {title}")
     _out(f"{'='*70}")
-    res_a = _print_protocol(
+    _print_protocol(
         model_key, title, sim_va, sim_av, rel_pair,
         "Protokoll A: Pair-basiert (exaktes Paar)", "A", "pair",
     )
-    res_b = _print_protocol(
+    _print_protocol(
         model_key, title, sim_va, sim_av, rel_label,
         "Protokoll B: Label-basiert (gleiches Genre)", "B", "label",
     )
-    if seen_genres is not None:
-        _plot_data[model_key] = {"A": res_a, "B": res_b}
 
 _out(f"Dataset-Run:      {run_name}")
 _out(f"Training-Run-Dir: {shared_run_dir or '-'}")
@@ -278,89 +275,6 @@ if sim_ae_pair is not None:
 if sim_ae_genre is not None:
     print_breakdown("audio_encoder_genre", "Audio-Encoder Genre", sim_ae_genre, sim_ae_genre.T)
 
-# --- Plot: Protocol B — Seen / Unseen / Overall MRR (E4 generalization) ---
-_PLOT_MODEL_ORDER = [
-    ("baseline", "Baseline"),
-    ("pair", "E1"),
-    ("genre", "E2"),
-    ("audio_encoder_pair", "E3a"),
-    ("audio_encoder_genre", "E3b"),
-]
-_BAR_GROUPS = [
-    ("seen", "Seen avg.", "#2166ac"),
-    ("unseen", "Unseen avg.", "#d95f02"),
-    ("total", "Overall avg.", "#55A868"),
-]
-
-
-def _style_bar_axis(ax, ylabel: str) -> None:
-    ax.set_ylabel(ylabel, fontsize=10)
-    ax.tick_params(axis="both", labelsize=9)
-    ax.grid(which="major", axis="y", linestyle="-", linewidth=0.4, alpha=0.5)
-    for spine in ax.spines.values():
-        spine.set_linewidth(0.6)
-        spine.set_color("#666666")
-    ax.legend(fontsize=7.5, frameon=True, framealpha=0.9, edgecolor="#cccccc")
-
-
-if seen_genres is not None and _plot_data and os.environ.get("TRAINING_RUN_DIR"):
-    try:
-        import matplotlib
-        matplotlib.use("Agg")
-        import matplotlib.pyplot as plt
-
-        plot_models = [(k, label) for k, label in _PLOT_MODEL_ORDER if k in _plot_data]
-        if plot_models:
-            model_keys, model_labels = zip(*plot_models)
-            x = np.arange(len(model_keys))
-            bar_width = 0.22
-            offsets = [-bar_width, 0.0, bar_width]
-
-            fig, axes = plt.subplots(1, 2, figsize=(7, 3.5))
-            plot_configs = [
-                ("V2A", axes[0], "V→A"),
-                ("A2V", axes[1], "A→V"),
-            ]
-
-            for direction_key, ax, title in plot_configs:
-                panel_vals = []
-                for model_key in model_keys:
-                    direction_data = _plot_data[model_key]["B"].get(direction_key, {})
-                    for bucket_key, _, _ in _BAR_GROUPS:
-                        panel_vals.append(direction_data.get(bucket_key, 0.0))
-
-                for i, (bucket_key, bucket_label, color) in enumerate(_BAR_GROUPS):
-                    vals = [
-                        _plot_data[m]["B"].get(direction_key, {}).get(bucket_key, 0.0)
-                        for m in model_keys
-                    ]
-                    ax.bar(
-                        x + offsets[i],
-                        vals,
-                        bar_width,
-                        label=bucket_label,
-                        color=color,
-                        edgecolor="white",
-                        linewidth=0.6,
-                    )
-
-                ax.set_title(f"Protocol B — {title}", fontsize=10)
-                ax.set_xticks(x)
-                ax.set_xticklabels(model_labels, fontsize=9)
-                ymax = max(panel_vals) * 1.12 if panel_vals else 1.0
-                ax.set_ylim(0, ymax)
-                _style_bar_axis(ax, "MRR")
-
-            fig.tight_layout()
-            plot_base = Path(os.environ["TRAINING_RUN_DIR"]) / "genre_breakdown_plot"
-            fig.savefig(f"{plot_base}.pdf", bbox_inches="tight")
-            fig.savefig(f"{plot_base}.png", dpi=300, bbox_inches="tight")
-            plt.close(fig)
-            print(f"\nPlot gespeichert: {plot_base}.pdf", flush=True)
-            print(f"Plot gespeichert: {plot_base}.png", flush=True)
-    except Exception as e:
-        print(f"Plot fehlgeschlagen: {e}", flush=True)
-
 # --- Ausgabe speichern ---
 if os.environ.get("TRAINING_RUN_DIR"):
     out_dir = Path(os.environ["TRAINING_RUN_DIR"])
@@ -371,3 +285,10 @@ if os.environ.get("TRAINING_RUN_DIR"):
     save_genre_breakdown_csv(breakdown_rows, breakdown_csv)
     print(f"\nGespeichert: {out_path}", flush=True)
     print(f"Gespeichert: {breakdown_csv}", flush=True)
+
+    if seen_genres is not None:
+        try:
+            from plot_genre_breakdown import plot_genre_breakdown
+            plot_genre_breakdown(out_dir)
+        except Exception as e:
+            print(f"Plot fehlgeschlagen: {e}", flush=True)
