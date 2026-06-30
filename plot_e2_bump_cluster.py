@@ -5,10 +5,13 @@ Zwei Panels:
   (a) 10x10-Heatmap der mittleren cross-modalen Cosine-Similarity je Genre-Paar
       (Zeile = Video-Genre der Query, Spalte = Audio-Genre; Diagonale = same genre,
       ausmaskiert). Stark negative Off-Diagonal-Zellen = antipodale Genre-Paare.
-  (b) Different-genre Similarities, aufgeteilt nach Cluster-Zugehoerigkeit:
-      Within cluster  - beide Genres aus CLUSTER_GENRES {Electronic, Funk, Hip hop, Pop, Reggae}
-      Between clusters - alle uebrigen different-genre Paare
+  (b) Different-genre Similarities, aufgeteilt nach Cluster-Zugehoerigkeit (symmetrisch):
+      Within cluster  - beide Genres im SELBEN Cluster (egal welchem)
+      Between clusters - je ein Genre aus dem modernen und eines aus dem akustischen Cluster
       (Same genre absichtlich weggelassen - steckt schon im Similarity-Histogramm.)
+
+      Cluster: modern = {Electronic, Funk, Hip hop, Pop, Reggae},
+               akustisch = {Blues, Classical, Country, Jazz, Rock}.
 
 E2 nutzt dieselben frozen Embeddings wie die Baseline, nur mit dem trainierten
 Genre-Projektionskopf (kein Audio-Encoder).
@@ -52,7 +55,8 @@ GENRE_SHORT = {
     "Reggae": "Reggae",
     "Rock music": "Rock",
 }
-CLUSTER_GENRES = {"Electronic music", "Funk", "Hip hop music", "Pop music", "Reggae"}
+CLUSTER_MODERN = {"Electronic music", "Funk", "Hip hop music", "Pop music", "Reggae"}
+CLUSTER_ACOUSTIC = {"Blues", "Classical music", "Country", "Jazz", "Rock music"}
 
 COLOR_WITHIN = "#ff7f0e"
 COLOR_BETWEEN = "#1f77b4"
@@ -113,7 +117,8 @@ genre_to_idx = {g: i for i, g in enumerate(genres)}
 genre_labels_short = [GENRE_SHORT.get(g, g) for g in genres]
 label_idx = np.array([genre_to_idx[l] for l in labels])
 n_genres = len(genres)
-in_cluster = np.array([l in CLUSTER_GENRES for l in labels])
+# Cluster-ID: 0 = modern, 1 = akustisch (alles, was nicht modern ist)
+cluster_id = np.array([0 if l in CLUSTER_MODERN else 1 for l in labels])
 
 V = torch.tensor(np.stack([np.load(s[2]) for s in samples]), dtype=torch.float32, device=config.DEVICE)
 A = torch.tensor(np.stack([np.load(s[3]) for s in samples]), dtype=torch.float32, device=config.DEVICE)
@@ -133,14 +138,15 @@ for gi in range(n_genres):
         mean_mat[gi, gj] = float(sim[np.ix_(idx_by_genre[gi], idx_by_genre[gj])].mean())
 mask_diag = np.eye(n_genres, dtype=bool)
 
-# --- Panel (b): Within vs. Between Cluster (nur different-genre) ---
+# --- Panel (b): Within vs. Between Cluster (symmetrisch, nur different-genre) ---
 same_mask = labels[:, None] == labels[None, :]
 diff_mask = ~same_mask
-both_in_cluster = in_cluster[:, None] & in_cluster[None, :]
-within_vals = sim[diff_mask & both_in_cluster]
-between_vals = sim[diff_mask & ~both_in_cluster]
+same_cluster = cluster_id[:, None] == cluster_id[None, :]
+within_vals = sim[diff_mask & same_cluster]       # beide Genres im selben Cluster
+between_vals = sim[diff_mask & ~same_cluster]      # je eines aus verschiedenen Clustern
 
-print(f"\nCluster (within) = {sorted(CLUSTER_GENRES)}", flush=True)
+print(f"\nCluster modern    = {sorted(CLUSTER_MODERN)}", flush=True)
+print(f"Cluster akustisch = {sorted(CLUSTER_ACOUSTIC)}", flush=True)
 print(f"Within cluster   n={within_vals.size:>9}  median={np.median(within_vals):.3f}  mean={within_vals.mean():.3f}", flush=True)
 print(f"Between clusters n={between_vals.size:>9}  median={np.median(between_vals):.3f}  mean={between_vals.mean():.3f}", flush=True)
 
