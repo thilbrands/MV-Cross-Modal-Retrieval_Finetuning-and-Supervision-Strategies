@@ -21,6 +21,7 @@ from models import ProjectionHead, load_projection_heads_pair, load_projection_h
 from metrics import (
     MRR,
     recall_at_k,
+    precision_at_k,
     mean_rank,
     labels_from_split_csv,
     label_relevance_matrix,
@@ -165,14 +166,18 @@ EVAL_PROTOCOLS = [
 results_rows: List[dict] = []
 
 
-def _compute_metrics(sim, relevance) -> dict:
-    return {
+def _compute_metrics(sim, relevance, with_precision: bool = False) -> dict:
+    metrics = {
         "mrr": float(MRR(sim, relevance=relevance)),
         "recall_at_1": float(recall_at_k(sim, 1, relevance=relevance)),
         "recall_at_5": float(recall_at_k(sim, 5, relevance=relevance)),
         "recall_at_10": float(recall_at_k(sim, 10, relevance=relevance)),
         "mean_rank": float(mean_rank(sim, relevance=relevance)),
     }
+    if with_precision:
+        metrics["precision_at_1"] = float(precision_at_k(sim, 1, relevance=relevance))
+        metrics["precision_at_10"] = float(precision_at_k(sim, 10, relevance=relevance))
+    return metrics
 
 
 def _record_metrics(
@@ -184,7 +189,8 @@ def _record_metrics(
     sim,
     relevance,
 ) -> None:
-    metrics = _compute_metrics(sim, relevance)
+    # Precision@k nur für Protocol B (Genre) sinnvoll – bei Protocol A gibt es genau 1 relevanten Treffer.
+    metrics = _compute_metrics(sim, relevance, with_precision=(protocol == "B"))
     results_rows.append({
         "protocol": protocol,
         "protocol_name": protocol_name,
@@ -194,13 +200,19 @@ def _record_metrics(
         **metrics,
     })
     _out(f"  {model}")
-    _out(
+    line = (
         "    MRR: " + str(metrics["mrr"])
         + " | Recall@1: " + str(metrics["recall_at_1"])
         + " | Recall@5: " + str(metrics["recall_at_5"])
         + " | Recall@10: " + str(metrics["recall_at_10"])
-        + " | Mean Rank: " + str(metrics["mean_rank"])
     )
+    if "precision_at_1" in metrics:
+        line += (
+            " | Precision@1: " + str(metrics["precision_at_1"])
+            + " | Precision@10: " + str(metrics["precision_at_10"])
+        )
+    line += " | Mean Rank: " + str(metrics["mean_rank"])
+    _out(line)
 
 
 for protocol_id, protocol_key, protocol_title, relevance in EVAL_PROTOCOLS:

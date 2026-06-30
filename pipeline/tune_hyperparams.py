@@ -117,7 +117,13 @@ def main():
 
     lr_values = [1e-3, 1e-4, 1e-5]
     out_dims = [64, 128, 256, 512]
-    temps = [0.07, 0.1, 0.3, 0.5, 0.7]
+    # InfoNCE (pair) bevorzugt niedrige Temperaturen; SupCon (genre) mit vielen Positiven
+    # pro Anchor das Optimum bei tau ~ 1.5 (siehe Tuning). Grids schliessen das Optimum ein.
+    temps = (
+        [0.07, 0.1, 0.3, 0.5, 0.7]
+        if training_type == "pair"
+        else [0.5, 0.7, 1.0, 1.5, 1.7, 2.0]
+    )
     head_types = ["linear", "mlp"]
     batch_sizes = [64, 128, 256, 512, 1024]
     hidden_dims = [32, 64, 128, 256, 512]

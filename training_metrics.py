@@ -21,6 +21,8 @@ EVALUATION_FIELDS = [
     "recall_at_1",
     "recall_at_5",
     "recall_at_10",
+    "precision_at_1",
+    "precision_at_10",
     "mean_rank",
 ]
 

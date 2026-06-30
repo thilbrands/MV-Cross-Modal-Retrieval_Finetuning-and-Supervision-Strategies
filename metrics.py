@@ -133,6 +133,30 @@ def recall_at_k(
     return hit / n if n else 0.0
 
 
+def precision_at_k(
+    sim: torch.Tensor,
+    k: int,
+    labels: Optional[np.ndarray] = None,
+    relevance: Optional[Union[np.ndarray, torch.Tensor, list]] = None,
+) -> float:
+    """Precision@k: mittlerer Anteil relevanter Kandidaten in den Top-k (relevante / k)."""
+    n = sim.size(0)
+    m = sim.size(1)
+    if relevance is None:
+        if labels is None:
+            raise ValueError("Bitte labels oder relevance angeben.")
+        relevance = label_relevance_matrix(labels)
+    rel = _as_relevance_matrix(relevance, n, m)
+
+    n = sim.size(0)
+    total = 0.0
+    for i in range(n):
+        top_k = torch.argsort(sim[i], descending=True)[:k]
+        rel_count = sum(1 for j in top_k.tolist() if bool(rel[i, int(j)]))
+        total += rel_count / k
+    return total / n if n else 0.0
+
+
 def mean_rank(
     sim: torch.Tensor,
     labels: Optional[np.ndarray] = None,
