@@ -1,7 +1,7 @@
 """
-Grid-Tuning für Pair- und Genre-Training mit task-aligned Selection:
-- pair  -> Protokoll A (Recall@10 avg V->A/A->V); τ ∈ {0.07, 0.1, 0.3, 0.5, 0.7}
-- genre -> Protokoll B (Recall@10 avg V->A/A->V); τ ∈ {0.9, …, 2.5}
+Grid-Tuning für Pair- und Genre-Training mit task-aligned Selection (MRR avg V->A/A->V):
+- pair  -> Protokoll A (MRR); τ ∈ {0.07, 0.1, 0.3, 0.5, 0.7}
+- genre -> Protokoll B (MRR); τ ∈ {0.5, 0.7, 1.0, 1.5, 1.7, 2.0}
 
 Nutzung:
   TRAINING_TYPE=pair  python -m pipeline.tune_hyperparams
@@ -85,11 +85,11 @@ def _run_trial(
     with open(metrics_json, "r", encoding="utf-8") as f:
         m = json.load(f)
 
-    score = float(m["selection_score_recall_at_10_avg"])
+    score = float(m["selection_score"])
     row = {
         "trial": trial_idx,
         "training_type": training_type,
-        "score_recall_at_10_avg": score,
+        "score_mrr_avg": score,
         "selection_protocol": m["selection_protocol"],
         "lr": lr,
         "out_dim": out_dim,
@@ -179,18 +179,18 @@ def main():
             futures.append(fut)
         for completed, fut in enumerate(concurrent.futures.as_completed(futures), start=1):
             row = fut.result()
-            score = row["score_recall_at_10_avg"]
+            score = row["score_mrr_avg"]
             rows.append(row)
             if score > best_score:
                 best_score = score
                 best_trial = row
             print(
-                f"  -> trial={row['trial']} r10_score={score:.6f} (best={best_score:.6f})"
+                f"  -> trial={row['trial']} mrr_score={score:.6f} (best={best_score:.6f})"
                 f" [{completed}/{len(combos)} = {100*completed/len(combos):.1f}%]",
                 flush=True,
             )
 
-    rows_sorted = sorted(rows, key=lambda x: x["score_recall_at_10_avg"], reverse=True)
+    rows_sorted = sorted(rows, key=lambda x: x["score_mrr_avg"], reverse=True)
     csv_path = tuning_root / "results.csv"
     with open(csv_path, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=list(rows_sorted[0].keys()))

@@ -16,7 +16,7 @@ sys.path.insert(0, str(_REPO_ROOT))
 
 import config
 from dataset import PairDataset
-from metrics import recall_at_k, labels_from_split_csv, label_relevance_matrix, pair_relevance_matrix
+from metrics import MRR, labels_from_split_csv, label_relevance_matrix, pair_relevance_matrix
 from models import load_projection_heads_pair, load_projection_heads_genre
 
 
@@ -70,16 +70,16 @@ def main():
     rel_pair = pair_relevance_matrix(sim.size(0))
     rel_label = label_relevance_matrix(labels)
 
-    r10_a_va, r10_a_av, r10_a_avg = _avg_bidir(
-        lambda s, relevance: recall_at_k(s, 10, relevance=relevance), sim, rel_pair
+    mrr_a_va, mrr_a_av, mrr_a_avg = _avg_bidir(
+        lambda s, relevance: MRR(s, relevance=relevance), sim, rel_pair
     )
-    r10_b_va, r10_b_av, r10_b_avg = _avg_bidir(
-        lambda s, relevance: recall_at_k(s, 10, relevance=relevance), sim, rel_label
+    mrr_b_va, mrr_b_av, mrr_b_avg = _avg_bidir(
+        lambda s, relevance: MRR(s, relevance=relevance), sim, rel_label
     )
 
-    # Task-aligned selection score:
+    # Task-aligned selection score (MRR ist diskriminierender als Recall@10):
     # pair -> Protokoll A, genre -> Protokoll B
-    selection_score = r10_a_avg if training_type == "pair" else r10_b_avg
+    selection_score = mrr_a_avg if training_type == "pair" else mrr_b_avg
 
     result = {
         "training_type": training_type,
@@ -87,12 +87,13 @@ def main():
         "dataset_run": run_name,
         "model_path": model_path,
         "selection_protocol": "A_pair" if training_type == "pair" else "B_label",
-        "selection_score_recall_at_10_avg": float(selection_score),
+        "selection_metric": "mrr",
+        "selection_score": float(selection_score),
         "protocol_a": {
-            "recall_at_10": {"va": float(r10_a_va), "av": float(r10_a_av), "avg": float(r10_a_avg)},
+            "mrr": {"va": float(mrr_a_va), "av": float(mrr_a_av), "avg": float(mrr_a_avg)},
         },
         "protocol_b": {
-            "recall_at_10": {"va": float(r10_b_va), "av": float(r10_b_av), "avg": float(r10_b_avg)},
+            "mrr": {"va": float(mrr_b_va), "av": float(mrr_b_av), "avg": float(mrr_b_avg)},
         },
     }
 
