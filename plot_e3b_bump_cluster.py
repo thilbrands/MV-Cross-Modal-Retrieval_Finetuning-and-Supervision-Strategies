@@ -1,5 +1,5 @@
 """
-E2-Bump-Analyse (Genre-Head auf frozen Embeddings, SupCon).
+E3b-Bump-Analyse (Audio-Encoder Genre, SupCon).
 
 Zwei Panels:
   (a) 10x10-Heatmap der mittleren cross-modalen Cosine-Similarity je Genre-Paar
@@ -10,17 +10,16 @@ Zwei Panels:
       Outside cluster - alle uebrigen different-genre Paare (mind. ein Genre ausserhalb)
       (Same genre absichtlich weggelassen - steckt schon im Similarity-Histogramm.)
 
-E2 nutzt dieselben frozen Embeddings wie die Baseline, nur mit dem trainierten
-Genre-Projektionskopf (kein Audio-Encoder).
+E3b nutzt die fine-getunten Audio-Encoder-Embeddings plus die Genre-Heads.
 
 Env-Vars:
   DATASET_RUN_NAME   - Dataset-Run (default: neuester)
-  TRAINING_RUN_DIR   - Run mit projection_heads_genre.pt (auch als Genre-Default)
-  GENRE_RUN_DIR      - ueberschreibt TRAINING_RUN_DIR fuer den Genre-Head
+  TRAINING_RUN_DIR   - Run mit audio_encoder_genre.pt (auch als AE-Genre-Default)
+  AE_GENRE_RUN_DIR   - ueberschreibt TRAINING_RUN_DIR fuer den Genre-Encoder
   BUMP_THRESHOLD     - gestrichelte Bump-Linie im Histogramm (default: -0.5)
 
-Run: python3 plot_e2_bump_cluster.py
-     TRAINING_RUN_DIR=... python3 plot_e2_bump_cluster.py
+Run: python3 plot_e3b_bump_cluster.py
+     TRAINING_RUN_DIR=... python3 plot_e3b_bump_cluster.py
 """
 import csv
 import os
@@ -38,7 +37,7 @@ import torch.nn.functional as F
 _REPO_ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(_REPO_ROOT))
 import config
-from models import load_projection_heads_genre
+from models import load_audio_encoder_heads_genre
 
 GENRE_SHORT = {
     "Blues": "Blues",
@@ -67,19 +66,19 @@ run_dir = config.DATASETS_ROOT / run_name
 split_csv = run_dir / "train_val_test_split.csv"
 embeddings_dir = run_dir / "embeddings"
 
-genre_path = (
-    Path(os.environ["GENRE_RUN_DIR"]) if os.environ.get("GENRE_RUN_DIR")
+ae_genre_path = (
+    Path(os.environ["AE_GENRE_RUN_DIR"]) if os.environ.get("AE_GENRE_RUN_DIR")
     else Path(os.environ["TRAINING_RUN_DIR"]) if os.environ.get("TRAINING_RUN_DIR")
-    else config.get_latest_training_run_with("projection_heads_genre.pt")
+    else config.get_latest_training_run_with("audio_encoder_genre.pt")
 )
-if not genre_path:
-    print("FEHLER: Genre-Head-Run nicht gefunden. GENRE_RUN_DIR / TRAINING_RUN_DIR setzen.", flush=True)
+if not ae_genre_path:
+    print("FEHLER: AE-Genre-Run nicht gefunden. AE_GENRE_RUN_DIR / TRAINING_RUN_DIR setzen.", flush=True)
     sys.exit(1)
 
+ae_genre_emb_dir = ae_genre_path / "audio_encoder_genre_test_embeddings"
 for label, p in [
     ("Dataset embeddings/video", embeddings_dir / "video"),
-    ("Dataset embeddings/audio", embeddings_dir / "audio"),
-    ("Genre-Head", genre_path / "projection_heads_genre.pt"),
+    ("AE-Genre Test-Embeddings", ae_genre_emb_dir),
     ("Split-CSV", split_csv),
 ]:
     if not p.exists():
@@ -94,16 +93,16 @@ with open(split_csv, "r", newline="", encoding="utf-8") as f:
         video_id = row["video_id"].strip()
         label = row["label"].strip()
         v_path = embeddings_dir / "video" / f"{video_id}.npy"
-        a_path = embeddings_dir / "audio" / f"{video_id}.npy"
-        if v_path.exists() and a_path.exists():
-            samples.append((video_id, label, v_path, a_path))
+        ae_genre_emb = ae_genre_emb_dir / f"{video_id}.npy"
+        if v_path.exists() and ae_genre_emb.exists():
+            samples.append((video_id, label, v_path, ae_genre_emb))
 
 if not samples:
     print("FEHLER: Keine Test-Samples mit allen Embeddings gefunden.", flush=True)
     sys.exit(1)
 
 print(f"Dataset-Run:  {run_name}", flush=True)
-print(f"Genre-Run:    {genre_path}", flush=True)
+print(f"AE-Genre-Run: {ae_genre_path}", flush=True)
 print(f"Test-Samples: {len(samples)}", flush=True)
 print(f"Bump-Linie:   sim = {BUMP_THRESHOLD}", flush=True)
 
@@ -116,13 +115,13 @@ n_genres = len(genres)
 in_cluster = np.array([l in CLUSTER_GENRES for l in labels])
 
 V = torch.tensor(np.stack([np.load(s[2]) for s in samples]), dtype=torch.float32, device=config.DEVICE)
-A = torch.tensor(np.stack([np.load(s[3]) for s in samples]), dtype=torch.float32, device=config.DEVICE)
+A_ae_genre = torch.tensor(np.stack([np.load(s[3]) for s in samples]), dtype=torch.float32, device=config.DEVICE)
 
-video_head, audio_head = load_projection_heads_genre(genre_path)
+video_head, audio_head = load_audio_encoder_heads_genre(ae_genre_path)
 
 with torch.no_grad():
     v = F.normalize(video_head(V), p=2, dim=-1)
-    a = F.normalize(audio_head(A), p=2, dim=-1)
+    a = F.normalize(audio_head(A_ae_genre), p=2, dim=-1)
     sim = (v @ a.T).cpu().numpy()
 
 # --- Panel (a): Genre-Paar-Mittelwert-Matrix ---
@@ -133,7 +132,7 @@ for gi in range(n_genres):
         mean_mat[gi, gj] = float(sim[np.ix_(idx_by_genre[gi], idx_by_genre[gj])].mean())
 mask_diag = np.eye(n_genres, dtype=bool)
 
-# --- Panel (b): Within vs. Between Cluster (nur different-genre) ---
+# --- Panel (b): Within vs. Outside Cluster (nur different-genre) ---
 same_mask = labels[:, None] == labels[None, :]
 diff_mask = ~same_mask
 both_in_cluster = in_cluster[:, None] & in_cluster[None, :]
@@ -170,7 +169,7 @@ sns.heatmap(
     yticklabels=genre_labels_short,
     cbar_kws={"label": "Mean cosine similarity", "shrink": 0.8},
 )
-ax_hm.set_title("(a) Mean cross-modal similarity per genre pair (E2)", fontsize=10)
+ax_hm.set_title("(a) Mean cross-modal similarity per genre pair (E3b)", fontsize=10)
 ax_hm.set_xlabel("Audio genre", fontsize=10)
 ax_hm.set_ylabel("Query genre (video)", fontsize=10)
 ax_hm.tick_params(axis="both", labelsize=8)
@@ -181,7 +180,7 @@ for name, vals, color in groups:
     ax_hist.hist(vals, bins=bins, density=True, color=color, alpha=0.5, label=name)
     ax_hist.axvline(np.median(vals), color=color, linestyle="--", linewidth=1.2)
 ax_hist.axvline(BUMP_THRESHOLD, color="#333333", linestyle=":", linewidth=1.0)
-ax_hist.set_title("(b) Different-genre similarities by cluster (E2)", fontsize=10)
+ax_hist.set_title("(b) Different-genre similarities by cluster (E3b)", fontsize=10)
 ax_hist.set_xlabel("Cosine similarity", fontsize=10)
 ax_hist.set_ylabel("Density", fontsize=10)
 ax_hist.set_xlim(xlim)
@@ -193,7 +192,7 @@ for spine in ax_hist.spines.values():
 ax_hist.legend(fontsize=7.5, frameon=True, framealpha=0.9, edgecolor="#cccccc")
 
 fig.tight_layout()
-out_base = run_dir / "e2_bump_cluster"
+out_base = run_dir / "e3b_bump_cluster"
 fig.savefig(f"{out_base}.pdf", bbox_inches="tight")
 fig.savefig(f"{out_base}.png", dpi=300, bbox_inches="tight")
 plt.close(fig)
