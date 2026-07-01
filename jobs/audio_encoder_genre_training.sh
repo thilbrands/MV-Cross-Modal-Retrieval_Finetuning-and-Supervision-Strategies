@@ -32,13 +32,14 @@ module load Python/3.11.5-GCCcore-13.2.0
 source "$HOME/venv/ba/bin/activate"
 
 export PYTHONUNBUFFERED=1
+# Defaults aus Tuning Trial 818 (tuning_genre_2026-06-30_15-03-56, MRR-Selection)
 export HP_LR="${HP_LR:-1e-3}"
 export HP_LR_ENCODER="${HP_LR_ENCODER:-1e-4}"
 export HP_OUT_DIM="${HP_OUT_DIM:-512}"
-export HP_TEMP="${HP_TEMP:-1.7}"
-export HP_HEAD_TYPE="${HP_HEAD_TYPE:-linear}"
-export HP_HIDDEN_DIM="${HP_HIDDEN_DIM:-32}"
-export HP_BATCH_SIZE="${HP_BATCH_SIZE:-128}"
+export HP_TEMP="${HP_TEMP:-0.07}"
+export HP_HEAD_TYPE="${HP_HEAD_TYPE:-mlp}"
+export HP_HIDDEN_DIM="${HP_HIDDEN_DIM:-128}"
+export HP_BATCH_SIZE="${HP_BATCH_SIZE:-64}"
 export HP_MAX_EPOCHS="${HP_MAX_EPOCHS:-20}"
 export HP_PATIENCE="${HP_PATIENCE:-3}"
 export HP_SEED="${HP_SEED:-42}"
