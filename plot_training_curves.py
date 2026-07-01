@@ -1,14 +1,44 @@
+"""
+Training-Curves-Plot (E1/E2/E3a/E3b) aus results_*.csv.
+
+Run:
+  TRAINING_RUN_DIR=/path/to/run python3 plot_training_curves.py
+  TRAINING_RUN_DIR=~/Desktop/ba_results/genre_retuned/csv python3 plot_training_curves.py
+"""
 import csv
+import os
+import sys
 from pathlib import Path
 
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator
 
-RUN_DIR = Path.home() / "Desktop/ba_results/2026-06-24_17-10"
-OUTPUT_PATH = RUN_DIR / "training_curves"
+_REPO_ROOT = Path(__file__).resolve().parent
+sys.path.insert(0, str(_REPO_ROOT))
+import config
 
 COLOR_HEAD = "#2166ac"
 COLOR_ENCODER = "#d95f02"
+
+
+def _resolve_run_dir() -> Path:
+    if os.environ.get("TRAINING_RUN_DIR"):
+        return Path(os.environ["TRAINING_RUN_DIR"]).expanduser()
+    for candidate in [
+        Path.home() / "Desktop/ba_results/genre_retuned/csv",
+        config.TRAINING_RUNS_ROOT / "2026-07-01_13-41",
+        Path.home() / "Desktop/ba_results/2026-06-24_17-10",
+    ]:
+        if (candidate / "results_pair.csv").exists():
+            return candidate
+    print("FEHLER: TRAINING_RUN_DIR nicht gesetzt und keine results_pair.csv gefunden.", flush=True)
+    sys.exit(1)
+
+
+RUN_DIR = _resolve_run_dir()
+OUTPUT_PATH = Path(os.environ.get("OUTPUT_PATH", RUN_DIR / "training_curves"))
 
 
 def load_metrics(path):
@@ -45,6 +75,7 @@ def style_axis(ax, ylabel):
     ax.legend(fontsize=7.5, frameon=True, framealpha=0.9, edgecolor="#cccccc")
 
 
+print(f"RUN_DIR: {RUN_DIR}", flush=True)
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(7, 3.2))
 
 plot_experiment(ax1, "results_pair.csv", "E1", COLOR_HEAD)
@@ -62,3 +93,5 @@ OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
 fig.savefig(f"{OUTPUT_PATH}.pdf", bbox_inches="tight")
 fig.savefig(f"{OUTPUT_PATH}.png", dpi=300, bbox_inches="tight")
 plt.close(fig)
+print(f"Gespeichert: {OUTPUT_PATH}.pdf", flush=True)
+print(f"Gespeichert: {OUTPUT_PATH}.png", flush=True)
