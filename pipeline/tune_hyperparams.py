@@ -120,7 +120,7 @@ def main():
     # InfoNCE (pair) bevorzugt niedrige Temperaturen; SupCon (genre) mit vielen Positiven
     # pro Anchor das Optimum bei tau ~ 1.5 (siehe Tuning). Grids schliessen das Optimum ein.
     temps = (
-        [0.07, 0.1, 0.3, 0.5, 0.7, 1.0, 1.5, 1.7, 2.0]
+        [0.03, 0.05, 0.07, 0.1, 0.3, 0.5, 0.7, 1.0]
     )
     head_types = ["linear", "mlp"]
     batch_sizes = [64, 128, 256, 512, 1024]
