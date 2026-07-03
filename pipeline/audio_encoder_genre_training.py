@@ -66,7 +66,7 @@ METRICS_CSV = training_run_dir / "results_audio_encoder_genre.csv"
 batch_size = _env_int("HP_BATCH_SIZE", 64)
 lr = _env_float("HP_LR", 1e-3)
 lr_encoder = _env_float("HP_LR_ENCODER", lr / 10)
-temp = _env_float("HP_TEMP", 0.07)
+temp = _env_float("HP_TEMP", 0.05)
 out_dim = _env_int("HP_OUT_DIM", 512)
 head_type = os.environ.get("HP_HEAD_TYPE", "mlp")
 hidden_dim = _env_int("HP_HIDDEN_DIM", 128)
@@ -97,7 +97,7 @@ print(f"Training-Run: {training_run_dir}", flush=True)
 print(f"Hyperparams: lr={lr} lr_encoder={lr_encoder} temp={temp} out_dim={out_dim} head_type={head_type} hidden_dim={hidden_dim} batch_size={batch_size} patience={patience} seed={seed}", flush=True)
 
 
-def genre_supcon_loss(v_proj, a_proj, labels, temp: float = 0.07):
+def genre_supcon_loss(v_proj, a_proj, labels, temp: float = 0.05):
     """
     Supervised Contrastive Loss (Khosla et al. 2020, Eq. 2), cross-modal V↔A.
     Pro Anker: Mittel über -log(exp(sim_pos)/sum_j exp(sim_j)) je Positive.

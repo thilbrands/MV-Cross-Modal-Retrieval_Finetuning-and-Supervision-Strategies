@@ -58,7 +58,7 @@ METRICS_CSV = training_run_dir / "results_genre.csv"
 
 batch_size = _env_int("HP_BATCH_SIZE", 64)
 lr = _env_float("HP_LR", 1e-3)
-temp = _env_float("HP_TEMP", 0.07)
+temp = _env_float("HP_TEMP", 0.05)
 out_dim = _env_int("HP_OUT_DIM", 512)
 head_type = os.environ.get("HP_HEAD_TYPE", "mlp")
 hidden_dim = _env_int("HP_HIDDEN_DIM", 128)
@@ -86,7 +86,7 @@ print(f"Dataset-Run: {run_name} | Train: {len(train_ds)} | Val: {len(val_ds)} | 
 print(f"Training-Run: {training_run_dir}", flush=True)
 print(f"Hyperparams: lr={lr} temp={temp} out_dim={out_dim} head_type={head_type} hidden_dim={hidden_dim} batch_size={batch_size} patience={patience} seed={seed}", flush=True)
 
-def genre_supcon_loss(v_proj, a_proj, labels, temp: float = 0.07):
+def genre_supcon_loss(v_proj, a_proj, labels, temp: float = 0.05):
     """
      Vektorisierte Implementierung wegen compute limits
     """
@@ -108,7 +108,7 @@ def genre_supcon_loss(v_proj, a_proj, labels, temp: float = 0.07):
     return (_dir_loss(sim_va) + _dir_loss(sim_av)) / 2
 
 
-# def genre_supcon_loss(v_proj, a_proj, labels, temp: float = 0.07):
+# def genre_supcon_loss(v_proj, a_proj, labels, temp: float = 0.05):
 #     v_proj = F.normalize(v_proj, p=2, dim=-1)
 #     a_proj = F.normalize(a_proj, p=2, dim=-1)
 #     sim_va = v_proj @ a_proj.T  # [B, B]

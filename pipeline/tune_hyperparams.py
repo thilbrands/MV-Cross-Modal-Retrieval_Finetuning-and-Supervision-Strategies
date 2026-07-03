@@ -1,7 +1,6 @@
 """
 Grid-Tuning für Pair- und Genre-Training mit task-aligned Selection (MRR avg V->A/A->V):
-- pair  -> Protokoll A (MRR); τ ∈ {0.07, 0.1, 0.3, 0.5, 0.7}
-- genre -> Protokoll B (MRR); τ ∈ {0.5, 0.7, 1.0, 1.5, 1.7, 2.0}
+
 
 Nutzung:
   TRAINING_TYPE=pair  python -m pipeline.tune_hyperparams
@@ -117,8 +116,7 @@ def main():
 
     lr_values = [1e-3, 1e-4, 1e-5]
     out_dims = [64, 128, 256, 512]
-    # InfoNCE (pair) bevorzugt niedrige Temperaturen; SupCon (genre) mit vielen Positiven
-    # pro Anchor das Optimum bei tau ~ 1.5 (siehe Tuning). Grids schliessen das Optimum ein.
+    # InfoNCE (pair): niedrige τ. SupCon (genre): Optimum bei τ≈0.05 (Trial 758, MRR-Selection).
     temps = (
         [0.03, 0.05, 0.07, 0.1, 0.3, 0.5, 0.7, 1.0]
     )
