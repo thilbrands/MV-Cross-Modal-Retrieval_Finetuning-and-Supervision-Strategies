@@ -5,7 +5,8 @@
 #
 # Nutzung (vom Repo-Root auf dem Cluster):
 #   sbatch jobs/genre_based_training.sh
-#   sbatch --export=DATASET_RUN_NAME=2026-03-13_18-02-30_audioset jobs/genre_based_training.sh
+#   sbatch --export=DATASET_RUN_NAME=2026-05-26_15-59-27_audioset jobs/genre_based_training.sh
+#   sbatch --export=DATASET_RUN_NAME=...,HP_LR=1e-3,HP_OUT_DIM=512,HP_TEMP=0.05,HP_HEAD_TYPE=mlp,HP_HIDDEN_DIM=128,HP_BATCH_SIZE=64 jobs/genre_based_training.sh
 #
 
 #SBATCH --job-name=training_genre
@@ -39,7 +40,7 @@ echo "DATASET_RUN_NAME: ${DATASET_RUN_NAME:-<neuester Run>}"
 echo "Starte pipeline/genre_based_training.py …"
 
 export PYTHONUNBUFFERED=1
-# Defaults aus Tuning Trial 758 (tuning_genre_2026-07-02_06-07-38, MRR-Selection)
+# Defaults aus Tuning Trial 758 (tuning_genre_2026-07-03_12-11-17, MRR-Selection)
 export HP_LR="${HP_LR:-1e-3}"
 export HP_OUT_DIM="${HP_OUT_DIM:-512}"
 export HP_TEMP="${HP_TEMP:-0.05}"

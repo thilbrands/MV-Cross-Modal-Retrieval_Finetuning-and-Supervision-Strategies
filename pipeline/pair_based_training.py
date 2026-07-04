@@ -56,12 +56,12 @@ else:
 CHECKPOINT_PATH = training_run_dir / "projection_heads_pair.pt"
 METRICS_CSV = training_run_dir / "results_pair.csv"
 
-batch_size = _env_int("HP_BATCH_SIZE", 1024)
+batch_size = _env_int("HP_BATCH_SIZE", 128)
 lr = _env_float("HP_LR", 1e-4)
 temp = _env_float("HP_TEMP", 0.1)
 out_dim = _env_int("HP_OUT_DIM", 512)
-head_type = os.environ.get("HP_HEAD_TYPE", "mlp")
-hidden_dim = _env_int("HP_HIDDEN_DIM", 512)
+head_type = os.environ.get("HP_HEAD_TYPE", "linear")
+hidden_dim = _env_int("HP_HIDDEN_DIM", 32)
 num_epochs = _env_int("HP_MAX_EPOCHS", 20)
 patience = _env_int("HP_PATIENCE", 3)
 seed = _env_int("HP_SEED", 42)

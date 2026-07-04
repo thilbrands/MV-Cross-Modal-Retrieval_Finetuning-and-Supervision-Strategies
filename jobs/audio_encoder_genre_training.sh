@@ -5,7 +5,7 @@
 #
 # Nutzung:
 #   sbatch jobs/audio_encoder_genre_training.sh
-#   sbatch --export=DATASET_RUN_NAME=...,HP_LR=1e-3,HP_LR_ENCODER=1e-4,HP_OUT_DIM=256,HP_TEMP=1.5,HP_HEAD_TYPE=mlp,HP_HIDDEN_DIM=512 jobs/audio_encoder_genre_training.sh
+#   sbatch --export=DATASET_RUN_NAME=...,HP_LR=1e-3,HP_LR_ENCODER=1e-4,HP_OUT_DIM=512,HP_TEMP=0.05,HP_HEAD_TYPE=mlp,HP_HIDDEN_DIM=128,HP_BATCH_SIZE=64 jobs/audio_encoder_genre_training.sh
 #
 
 #SBATCH --job-name=ae_genre_training
@@ -32,7 +32,7 @@ module load Python/3.11.5-GCCcore-13.2.0
 source "$HOME/venv/ba/bin/activate"
 
 export PYTHONUNBUFFERED=1
-# Defaults aus Tuning Trial 758 (tuning_genre_2026-07-02_06-07-38, MRR-Selection)
+# Defaults aus Tuning Trial 758 (tuning_genre_2026-07-03_12-11-17, MRR-Selection)
 export HP_LR="${HP_LR:-1e-3}"
 export HP_LR_ENCODER="${HP_LR_ENCODER:-1e-4}"
 export HP_OUT_DIM="${HP_OUT_DIM:-512}"
