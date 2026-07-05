@@ -1,17 +1,17 @@
 """
 Evaluation aufgesplittet nach visueller Qualität (VLM-Score: KEEP_HIGH vs. KEEP_LOW).
 
-Retrieval-Pool = volles Test-Set (alle 3.668 Segmente). Nur die Menge der Queries,
+Retrieval-Pool = volles Test-Set (alle Segmente). Nur die Menge der Queries,
 über die gemittelt wird, wird gefiltert (einmal KEEP_HIGH, einmal KEEP_LOW).
 
-Modelle: Baseline (frozen), E3a (Audio-Encoder Pair), E3b (Audio-Encoder Genre).
+Modelle: Baseline (frozen), E1 (Pair-Head), E2 (Genre-Head).
 Metriken: MRR, Recall@10 — Protocol A (Pair) + B (Genre), Richtungen V→A und A→V.
 
 Env-Vars:
   DATASET_RUN_NAME   — Dataset-Run (default: neuester)
-  TRAINING_RUN_DIR   — Run mit audio_encoder_*.pt (auch als AE-Default)
-  AE_PAIR_RUN_DIR / AE_GENRE_RUN_DIR — überschreiben TRAINING_RUN_DIR pro Encoder
-  EVAL_OUTPUT_DIR    — Ausgabeordner (default: TRAINING_RUN_DIR / Dataset-Run)
+  TRAINING_RUN_DIR   — Run mit projection_heads_*.pt (Default für beide Heads)
+  PAIR_RUN_DIR / GENRE_RUN_DIR — überschreiben TRAINING_RUN_DIR pro Head
+  EVAL_OUTPUT_DIR    — Ausgabeordner (default: TRAINING_RUN_DIR)
 """
 import csv
 import os
@@ -28,7 +28,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_REPO_ROOT))
 import config
 from dataset import PairDataset
-from models import load_audio_encoder_heads_pair, load_audio_encoder_heads_genre
+from models import load_projection_heads_pair, load_projection_heads_genre
 from metrics import MRR, recall_at_k, labels_from_split_csv, label_relevance_matrix, pair_relevance_matrix
 
 run_name = os.environ.get("DATASET_RUN_NAME") or config.get_latest_run_name()
@@ -41,18 +41,18 @@ EMBEDDINGS_DIR = run_dir / "embeddings"
 SPLIT_CSV = run_dir / "train_val_test_split.csv"
 DEVICE = config.DEVICE
 
-ae_pair_path = (
-    Path(os.environ["AE_PAIR_RUN_DIR"]) if os.environ.get("AE_PAIR_RUN_DIR")
+pair_path = (
+    Path(os.environ["PAIR_RUN_DIR"]) if os.environ.get("PAIR_RUN_DIR")
     else Path(os.environ["TRAINING_RUN_DIR"]) if os.environ.get("TRAINING_RUN_DIR")
-    else config.get_latest_training_run_with("audio_encoder_pair.pt")
+    else config.get_latest_training_run_with("projection_heads_pair.pt")
 )
-ae_genre_path = (
-    Path(os.environ["AE_GENRE_RUN_DIR"]) if os.environ.get("AE_GENRE_RUN_DIR")
+genre_path = (
+    Path(os.environ["GENRE_RUN_DIR"]) if os.environ.get("GENRE_RUN_DIR")
     else Path(os.environ["TRAINING_RUN_DIR"]) if os.environ.get("TRAINING_RUN_DIR")
-    else config.get_latest_training_run_with("audio_encoder_genre.pt")
+    else config.get_latest_training_run_with("projection_heads_genre.pt")
 )
-if not ae_pair_path or not ae_genre_path:
-    print("FEHLER: AE-Run nicht gefunden. AE_PAIR_RUN_DIR / AE_GENRE_RUN_DIR / TRAINING_RUN_DIR setzen.", flush=True)
+if not pair_path or not genre_path:
+    print("FEHLER: Head-Run nicht gefunden. PAIR_RUN_DIR / GENRE_RUN_DIR / TRAINING_RUN_DIR setzen.", flush=True)
     sys.exit(1)
 
 test_ds = PairDataset("test", SPLIT_CSV, EMBEDDINGS_DIR)
@@ -68,18 +68,8 @@ for v, a in test_loader:
 V = torch.cat(V_list, dim=0).to(DEVICE)
 A = torch.cat(A_list, dim=0).to(DEVICE)
 
-
-def _load_ae_embeddings(run_path, subdir):
-    emb_dir = run_path / subdir
-    embs = [torch.tensor(np.load(emb_dir / f"{vid}.npy"), dtype=torch.float32) for vid, *_ in test_ds.samples]
-    return torch.stack(embs).to(DEVICE)
-
-
-A_ae_pair = _load_ae_embeddings(ae_pair_path, "audio_encoder_pair_test_embeddings")
-A_ae_genre = _load_ae_embeddings(ae_genre_path, "audio_encoder_genre_test_embeddings")
-
-video_head_ae_pair, audio_head_ae_pair = load_audio_encoder_heads_pair(ae_pair_path)
-video_head_ae_genre, audio_head_ae_genre = load_audio_encoder_heads_genre(ae_genre_path)
+video_head_pair, audio_head_pair = load_projection_heads_pair(pair_path)
+video_head_genre, audio_head_genre = load_projection_heads_genre(genre_path)
 
 
 def _sim_frozen(video, audio):
@@ -94,8 +84,8 @@ def _sim_projected(video_head, audio_head, video, audio):
 
 
 sim_baseline = _sim_frozen(V, A)
-sim_e3a = _sim_projected(video_head_ae_pair, audio_head_ae_pair, V, A_ae_pair)
-sim_e3b = _sim_projected(video_head_ae_genre, audio_head_ae_genre, V, A_ae_genre)
+sim_e1 = _sim_projected(video_head_pair, audio_head_pair, V, A)
+sim_e2 = _sim_projected(video_head_genre, audio_head_genre, V, A)
 
 n = sim_baseline.size(0)
 rel_pair = pair_relevance_matrix(n)
@@ -103,8 +93,8 @@ rel_label = label_relevance_matrix(labels)
 
 MODELS = [
     ("baseline", "Baseline", sim_baseline),
-    ("audio_encoder_pair", "E3a", sim_e3a),
-    ("audio_encoder_genre", "E3b", sim_e3b),
+    ("pair", "E1", sim_e1),
+    ("genre", "E2", sim_e2),
 ]
 PROTOCOLS = [("A", "pair", rel_pair), ("B", "label", rel_label)]
 QUALITY_GROUPS = [
@@ -113,8 +103,8 @@ QUALITY_GROUPS = [
 ]
 
 print(f"Dataset-Run:  {run_name}", flush=True)
-print(f"AE-Pair-Run:  {ae_pair_path}", flush=True)
-print(f"AE-Genre-Run: {ae_genre_path}", flush=True)
+print(f"Pair-Run:     {pair_path}", flush=True)
+print(f"Genre-Run:    {genre_path}", flush=True)
 print(f"Test-Samples: {n}", flush=True)
 for q_name, q_idx in QUALITY_GROUPS:
     print(f"  {q_name}: {len(q_idx)} Queries", flush=True)

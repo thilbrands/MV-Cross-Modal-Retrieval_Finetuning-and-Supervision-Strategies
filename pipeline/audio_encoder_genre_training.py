@@ -98,43 +98,22 @@ print(f"Hyperparams: lr={lr} lr_encoder={lr_encoder} temp={temp} out_dim={out_di
 
 
 def genre_supcon_loss(v_proj, a_proj, labels, temp: float = 0.05):
-    """
-    Supervised Contrastive Loss (Khosla et al. 2020, Eq. 2), cross-modal V↔A.
-    Pro Anker: Mittel über -log(exp(sim_pos)/sum_j exp(sim_j)) je Positive.
-    """
+    """Vektorisierte SupCon-Loss (identisch zu genre_based_training.py)."""
     v_proj = F.normalize(v_proj, p=2, dim=-1)
     a_proj = F.normalize(a_proj, p=2, dim=-1)
-    sim_va = v_proj @ a_proj.T
+
+    labels_arr = np.asarray(labels)
+    mask = torch.from_numpy(labels_arr[:, None] == labels_arr[None, :]).to(v_proj.device).float()
+
+    sim_va = (v_proj @ a_proj.T) / temp
     sim_av = sim_va.T
-    bsz = v_proj.size(0)
-    loss = 0.0
-    count = 0
 
-    for i in range(bsz):
-        same = [j for j, lab in enumerate(labels) if lab == labels[i]]
-        if not same:
-            continue
-        all_scores = torch.exp(sim_va[i] / temp).sum()
-        per_pos = torch.stack(
-            [-torch.log(torch.exp(sim_va[i, p] / temp) / all_scores) for p in same]
-        )
-        loss += per_pos.mean()
-        count += 1
+    def _dir_loss(sim):
+        log_prob = sim - torch.logsumexp(sim, dim=1, keepdim=True)
+        mean_log_prob_pos = (mask * log_prob).sum(1) / mask.sum(1)
+        return -mean_log_prob_pos.mean()
 
-    for i in range(bsz):
-        same = [j for j, lab in enumerate(labels) if lab == labels[i]]
-        if not same:
-            continue
-        all_scores = torch.exp(sim_av[i] / temp).sum()
-        per_pos = torch.stack(
-            [-torch.log(torch.exp(sim_av[i, p] / temp) / all_scores) for p in same]
-        )
-        loss += per_pos.mean()
-        count += 1
-
-    if count == 0:
-        return torch.tensor(0.0, device=v_proj.device)
-    return loss / count
+    return (_dir_loss(sim_va) + _dir_loss(sim_av)) / 2
 
 
 epochs_without_improvement = 0

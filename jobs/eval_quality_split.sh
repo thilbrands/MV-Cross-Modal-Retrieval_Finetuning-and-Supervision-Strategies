@@ -1,12 +1,12 @@
 #!/bin/bash
 #
 # Slurm-Job: Evaluation aufgesplittet nach VLM-Qualität (KEEP_HIGH vs. KEEP_LOW).
-# Baseline + E3a + E3b, MRR & Recall@10, Protocol A/B, V→A und A→V.
+# Baseline + E1 + E2, MRR & Recall@10, Protocol A/B, V→A und A→V.
 # Speichert results_quality_split.csv im Ausgabeordner.
 #
 # Nutzung (vom Repo-Root auf dem Cluster):
 #   sbatch jobs/eval_quality_split.sh
-#   sbatch --export=DATASET_RUN_NAME=2026-05-26_15-59-27_audioset,TRAINING_RUN_DIR=/work2/ra39oxet-DatasetAudioSetSubset/training_runs/2026-06-24_17-10 jobs/eval_quality_split.sh
+#   sbatch --export=DATASET_RUN_NAME=2026-05-26_15-59-27_audioset,TRAINING_RUN_DIR=/work2/ra39oxet-DatasetAudioSetSubset/training_runs/2026-07-04_19-06 jobs/eval_quality_split.sh
 #
 
 #SBATCH --job-name=eval_quality_split
@@ -37,7 +37,7 @@ source "$HOME/venv/ba/bin/activate"
 echo "Hostname: $(hostname)"
 echo "Slurm Job ID: $SLURM_JOB_ID"
 echo "DATASET_RUN_NAME: ${DATASET_RUN_NAME:-<neuester Run>}"
-echo "TRAINING_RUN_DIR: ${TRAINING_RUN_DIR:-<neuester Run mit audio_encoder_*.pt>}"
+echo "TRAINING_RUN_DIR: ${TRAINING_RUN_DIR:-<neuester Run mit projection_heads_*.pt>}"
 echo "Starte pipeline/eval_quality_split.py …"
 
 export PYTHONUNBUFFERED=1
