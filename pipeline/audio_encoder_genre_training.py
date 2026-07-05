@@ -24,7 +24,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_REPO_ROOT))
 import config
 from dataset import RawAudioPairDataset
-from models import ProjectionHead, load_wav2clip_finetune
+from models import ProjectionHead, count_wav2clip_trainable, load_wav2clip_finetune, wav2clip_trainable_parameters
 from training_metrics import save_training_metrics_csv
 
 
@@ -65,7 +65,13 @@ METRICS_CSV = training_run_dir / "results_audio_encoder_genre.csv"
 
 batch_size = _env_int("HP_BATCH_SIZE", 64)
 lr = _env_float("HP_LR", 1e-3)
-lr_encoder = _env_float("HP_LR_ENCODER", lr / 10)
+encoder_unfreeze = os.environ.get("HP_ENCODER_UNFREEZE", "layer4_transform").strip()
+if os.environ.get("HP_LR_ENCODER"):
+    lr_encoder = float(os.environ["HP_LR_ENCODER"])
+elif encoder_unfreeze == "full":
+    lr_encoder = lr / 10
+else:
+    lr_encoder = lr / 3
 temp = _env_float("HP_TEMP", 0.05)
 out_dim = _env_int("HP_OUT_DIM", 512)
 head_type = os.environ.get("HP_HEAD_TYPE", "mlp")
@@ -83,18 +89,25 @@ val_ds = RawAudioPairDataset("val", TRAIN_VAL_TEST_SPLIT_CSV, EMBEDDINGS_DIR, re
 train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=0)
 val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, num_workers=0)
 
-wav2clip_model = load_wav2clip_finetune(DEVICE)
+wav2clip_model = load_wav2clip_finetune(DEVICE, unfreeze=encoder_unfreeze)
 video_head = ProjectionHead(out_dim=out_dim, head_type=head_type, hidden_dim=hidden_dim).to(DEVICE)
 audio_head = ProjectionHead(out_dim=out_dim, head_type=head_type, hidden_dim=hidden_dim).to(DEVICE)
+encoder_params = wav2clip_trainable_parameters(wav2clip_model)
 
 opt = torch.optim.Adam([
     {"params": list(video_head.parameters()) + list(audio_head.parameters()), "lr": lr},
-    {"params": wav2clip_model.parameters(), "lr": lr_encoder},
+    {"params": encoder_params, "lr": lr_encoder},
 ])
 
 print(f"Dataset-Run: {run_name} | Train: {len(train_ds)} | Val: {len(val_ds)} | Epochs: {num_epochs} | Device: {DEVICE} | TRAIN_GENRES: {train_genres or 'alle'}", flush=True)
 print(f"Training-Run: {training_run_dir}", flush=True)
-print(f"Hyperparams: lr={lr} lr_encoder={lr_encoder} temp={temp} out_dim={out_dim} head_type={head_type} hidden_dim={hidden_dim} batch_size={batch_size} patience={patience} seed={seed}", flush=True)
+print(
+    f"Hyperparams: lr={lr} lr_encoder={lr_encoder} encoder_unfreeze={encoder_unfreeze} "
+    f"trainable_encoder_params={count_wav2clip_trainable(wav2clip_model)} "
+    f"temp={temp} out_dim={out_dim} head_type={head_type} hidden_dim={hidden_dim} "
+    f"batch_size={batch_size} patience={patience} seed={seed}",
+    flush=True,
+)
 
 
 def genre_supcon_loss(v_proj, a_proj, labels, temp: float = 0.05):
@@ -187,6 +200,8 @@ meta = {
         "patience": patience,
         "lr": lr,
         "lr_encoder": lr_encoder,
+        "encoder_unfreeze": encoder_unfreeze,
+        "trainable_encoder_params": count_wav2clip_trainable(wav2clip_model),
         "batch_size": batch_size,
         "temp": temp,
         "out_dim": out_dim,

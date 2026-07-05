@@ -25,13 +25,48 @@ def load_models(device=None):
     return clip_model, clip_preprocess, wav2clip_model, DEVICE
 
 
-def load_wav2clip_finetune(device=None):
-    """Lädt Wav2CLIP mit trainierbaren Gewichten (scenario='finetune')."""
+def configure_wav2clip_trainable(model, unfreeze: str = "layer4_transform") -> None:
+    """
+    Steuert, welche Wav2CLIP-Teile trainierbar sind (ResNet-18 + MLP-Transform).
+
+    unfreeze:
+      - 'full': gesamter Encoder + Transform
+      - 'layer4_transform': nur encoder.layer4 (2 ResBlocks, 512-d) + transform (2 Linear)
+    """
+    if unfreeze not in {"full", "layer4_transform"}:
+        raise ValueError(f"Unbekannter unfreeze-Modus: {unfreeze!r}")
+
+    for p in model.parameters():
+        p.requires_grad = False
+
+    if unfreeze == "full":
+        for p in model.parameters():
+            p.requires_grad = True
+        return
+
+    for p in model.encoder.layer4.parameters():
+        p.requires_grad = True
+    if model.transform is not None:
+        for p in model.transform.parameters():
+            p.requires_grad = True
+
+
+def wav2clip_trainable_parameters(model):
+    return [p for p in model.parameters() if p.requires_grad]
+
+
+def count_wav2clip_trainable(model) -> int:
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+
+def load_wav2clip_finetune(device=None, unfreeze: str = "layer4_transform"):
+    """Lädt Wav2CLIP (scenario='finetune', transform=True) mit konfigurierbarem Partial Unfreeze."""
     from wav2clip import MODEL_URL
     from wav2clip.model.encoder import ResNetExtractor
     _device = device or DEVICE
     checkpoint = torch.hub.load_state_dict_from_url(MODEL_URL, map_location=_device, progress=True)
     model = ResNetExtractor(checkpoint=checkpoint, scenario="finetune", transform=True)
+    configure_wav2clip_trainable(model, unfreeze=unfreeze)
     model.to(_device)
     return model
 
