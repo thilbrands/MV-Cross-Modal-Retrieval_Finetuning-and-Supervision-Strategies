@@ -245,6 +245,24 @@ def _eval_output_dir() -> Path:
     return config.TRAINING_RUNS_ROOT / f"evaluation_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
 
 
+def _ae_runs_differ_from_training_dir() -> bool:
+    if not os.environ.get("TRAINING_RUN_DIR"):
+        return False
+    train_dir = Path(os.environ["TRAINING_RUN_DIR"]).resolve()
+    for ae_path in (ae_pair_path, ae_genre_path):
+        if ae_path and ae_path.resolve() != train_dir:
+            return True
+    return False
+
+
+if _ae_runs_differ_from_training_dir():
+    _out(
+        "Hinweis: AE_PAIR_RUN_DIR/AE_GENRE_RUN_DIR weichen von TRAINING_RUN_DIR ab — "
+        "keine Dateien im Train-Ordner geschrieben (Ergebnis nur im Slurm-Log)."
+    )
+    print("", flush=True)
+    sys.exit(0)
+
 output_dir = _eval_output_dir()
 output_dir.mkdir(parents=True, exist_ok=True)
 results_csv = output_dir / "results_evaluation.csv"

@@ -25,16 +25,20 @@ def load_models(device=None):
     return clip_model, clip_preprocess, wav2clip_model, DEVICE
 
 
+_UNFREEZE_MODES = frozenset({"full", "layer4_transform", "layer3_4_transform"})
+
+
 def configure_wav2clip_trainable(model, unfreeze: str = "layer4_transform") -> None:
     """
     Steuert, welche Wav2CLIP-Teile trainierbar sind (ResNet-18 + MLP-Transform).
 
     unfreeze:
       - 'full': gesamter Encoder + Transform
-      - 'layer4_transform': nur encoder.layer4 (2 ResBlocks, 512-d) + transform (2 Linear)
+      - 'layer4_transform': encoder.layer4 + transform
+      - 'layer3_4_transform': encoder.layer3 + layer4 + transform
     """
-    if unfreeze not in {"full", "layer4_transform"}:
-        raise ValueError(f"Unbekannter unfreeze-Modus: {unfreeze!r}")
+    if unfreeze not in _UNFREEZE_MODES:
+        raise ValueError(f"Unbekannter unfreeze-Modus: {unfreeze!r} (erlaubt: {sorted(_UNFREEZE_MODES)})")
 
     for p in model.parameters():
         p.requires_grad = False
@@ -44,11 +48,24 @@ def configure_wav2clip_trainable(model, unfreeze: str = "layer4_transform") -> N
             p.requires_grad = True
         return
 
-    for p in model.encoder.layer4.parameters():
-        p.requires_grad = True
+    if unfreeze in {"layer3_4_transform", "layer4_transform"}:
+        if unfreeze == "layer3_4_transform":
+            for p in model.encoder.layer3.parameters():
+                p.requires_grad = True
+        for p in model.encoder.layer4.parameters():
+            p.requires_grad = True
     if model.transform is not None:
         for p in model.transform.parameters():
             p.requires_grad = True
+
+
+def default_encoder_lr(head_lr: float, unfreeze: str) -> float:
+    """Default LR für Wav2CLIP je nach Unfreeze-Tiefe (ohne HP_LR_ENCODER)."""
+    if unfreeze == "full":
+        return head_lr / 10
+    if unfreeze == "layer3_4_transform":
+        return head_lr / 5
+    return head_lr / 3
 
 
 def wav2clip_trainable_parameters(model):

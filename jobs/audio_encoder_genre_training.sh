@@ -33,6 +33,7 @@ source "$HOME/venv/ba/bin/activate"
 
 export PYTHONUNBUFFERED=1
 # Defaults aus Tuning Trial 758; Partial Unfreeze: layer4 + transform
+# HP_ENCODER_UNFREEZE: layer4_transform (default) | layer3_4_transform | full
 export HP_ENCODER_UNFREEZE="${HP_ENCODER_UNFREEZE:-layer4_transform}"
 export HP_LR="${HP_LR:-1e-3}"
 # HP_LR_ENCODER optional: ohne Setzen → lr/3 (partial) bzw. lr/10 (full) im Python-Skript

@@ -24,7 +24,13 @@ _REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_REPO_ROOT))
 import config
 from dataset import RawAudioPairDataset
-from models import ProjectionHead, count_wav2clip_trainable, load_wav2clip_finetune, wav2clip_trainable_parameters
+from models import (
+    ProjectionHead,
+    count_wav2clip_trainable,
+    default_encoder_lr,
+    load_wav2clip_finetune,
+    wav2clip_trainable_parameters,
+)
 from training_metrics import save_training_metrics_csv
 
 
@@ -68,10 +74,8 @@ lr = _env_float("HP_LR", 1e-3)
 encoder_unfreeze = os.environ.get("HP_ENCODER_UNFREEZE", "layer4_transform").strip()
 if os.environ.get("HP_LR_ENCODER"):
     lr_encoder = float(os.environ["HP_LR_ENCODER"])
-elif encoder_unfreeze == "full":
-    lr_encoder = lr / 10
 else:
-    lr_encoder = lr / 3
+    lr_encoder = default_encoder_lr(lr, encoder_unfreeze)
 temp = _env_float("HP_TEMP", 0.05)
 out_dim = _env_int("HP_OUT_DIM", 512)
 head_type = os.environ.get("HP_HEAD_TYPE", "mlp")
