@@ -7,6 +7,8 @@ Rang (1-basiert) jedes gleich-genre-Kandidaten speichern.
 Ausgabe:
   rank_positions.csv
   rank_position_histograms.pdf / .png
+  per_genre_r10.csv
+  per_genre_r10.pdf / .png
 
 Env-Vars:
   DATASET_RUN_NAME, TRAINING_RUN_DIR, PAIR_RUN_DIR, GENRE_RUN_DIR, PLOT_OUTPUT_DIR
@@ -30,6 +32,20 @@ from metrics import label_relevance_matrix
 from models import load_projection_heads_genre, load_projection_heads_pair
 
 REF_RANK = 367
+GENRE_SHORT = {
+    "Blues": "Blues",
+    "Classical music": "Classical",
+    "Country": "Country",
+    "Electronic music": "Electronic",
+    "Funk": "Funk",
+    "Hip hop music": "Hip hop",
+    "Jazz": "Jazz",
+    "Pop music": "Pop",
+    "Reggae": "Reggae",
+    "Rock music": "Rock",
+}
+COLOR_E1 = "#1f77b4"
+COLOR_E2 = "#ff7f0e"
 
 
 def _head_run(env_name: str, training_run_dir, filename: str):
@@ -81,6 +97,27 @@ def _summary(model_key: str, direction: str, ranks: np.ndarray) -> None:
     )
 
 
+def _recall_at_10_per_query(sim: np.ndarray, rel: torch.Tensor) -> np.ndarray:
+    """Pro Query: 1 wenn >=1 relevanter Kandidat in Top-10, sonst 0."""
+    n = sim.shape[0]
+    hits = np.zeros(n, dtype=np.float64)
+    for i in range(n):
+        top10 = np.argsort(-sim[i])[:10]
+        if any(bool(rel[i, int(j)]) for j in top10):
+            hits[i] = 1.0
+    return hits
+
+
+def _per_genre_r10(sim: np.ndarray, rel: torch.Tensor, labels: np.ndarray, genres: list[str]):
+    per_query = _recall_at_10_per_query(sim, rel)
+    overall = float(per_query.mean())
+    by_genre = {}
+    for g in genres:
+        idx = np.where(labels == g)[0]
+        by_genre[g] = float(per_query[idx].mean()) if len(idx) else 0.0
+    return by_genre, overall
+
+
 run_name = os.environ.get("DATASET_RUN_NAME") or config.get_latest_run_name()
 if not run_name:
     print("FEHLER: Kein Dataset-Run gefunden.", flush=True)
@@ -118,6 +155,7 @@ if not samples:
     sys.exit(1)
 
 labels = np.array([s[0] for s in samples])
+genres = sorted(set(labels))
 n = len(labels)
 rel = label_relevance_matrix(labels)
 
@@ -140,6 +178,8 @@ models = [
 
 all_rows = []
 hist_data = {}
+r10_by_model_dir_genre = {}
+r10_overall = {}
 
 for model_key, _label, v_head, a_head in models:
     sim_va = _projected_sim(v_head, a_head, V, A)
@@ -149,6 +189,9 @@ for model_key, _label, v_head, a_head in models:
         all_rows.extend(rows)
         hist_data[(model_key, direction)] = ranks
         _summary(model_key, direction, ranks)
+        by_genre, overall = _per_genre_r10(sim, rel, labels, genres)
+        r10_by_model_dir_genre[(model_key, direction)] = by_genre
+        r10_overall[(model_key, direction)] = overall
 
 csv_path = output_dir / "rank_positions.csv"
 with open(csv_path, "w", newline="", encoding="utf-8") as f:
@@ -191,3 +234,75 @@ fig.savefig(f"{out_base}.png", dpi=300, bbox_inches="tight")
 plt.close(fig)
 print(f"Gespeichert: {out_base}.pdf", flush=True)
 print(f"Gespeichert: {out_base}.png", flush=True)
+
+r10_csv_rows = []
+for (model_key, direction), by_genre in r10_by_model_dir_genre.items():
+    for g in genres:
+        r10_csv_rows.append({
+            "model_key": model_key,
+            "direction": direction,
+            "genre": g,
+            "recall_at_10": by_genre[g],
+        })
+    r10_csv_rows.append({
+        "model_key": model_key,
+        "direction": direction,
+        "genre": "ALL",
+        "recall_at_10": r10_overall[(model_key, direction)],
+    })
+
+r10_csv_path = output_dir / "per_genre_r10.csv"
+with open(r10_csv_path, "w", newline="", encoding="utf-8") as f:
+    writer = csv.DictWriter(f, fieldnames=["model_key", "direction", "genre", "recall_at_10"])
+    writer.writeheader()
+    writer.writerows(r10_csv_rows)
+print(f"Gespeichert: {r10_csv_path}", flush=True)
+
+print("\n=== Per-genre R@10 (Protocol B) ===", flush=True)
+for direction in ("V2A", "A2V"):
+    print(f"\n{direction}:", flush=True)
+    e1 = r10_by_model_dir_genre[("pair", direction)]
+    e2 = r10_by_model_dir_genre[("genre", direction)]
+    for g in genres:
+        print(f"  {g}: E1={e1[g]*100:.1f}%  E2={e2[g]*100:.1f}%  Δ={(e1[g]-e2[g])*100:+.1f}pp", flush=True)
+    print(
+        f"  ALL: E1={r10_overall[('pair', direction)]*100:.1f}%  "
+        f"E2={r10_overall[('genre', direction)]*100:.1f}%",
+        flush=True,
+    )
+
+fig, axes = plt.subplots(1, 2, figsize=(14, 5), sharey=True)
+width = 0.36
+
+for ax, direction, title in zip(
+    axes,
+    ("V2A", "A2V"),
+    ("V→A", "A→V"),
+):
+    e1 = r10_by_model_dir_genre[("pair", direction)]
+    e2 = r10_by_model_dir_genre[("genre", direction)]
+    sorted_genres = sorted(genres, key=lambda g: e1[g] - e2[g], reverse=True)
+    x = np.arange(len(sorted_genres))
+    e1_vals = [e1[g] * 100 for g in sorted_genres]
+    e2_vals = [e2[g] * 100 for g in sorted_genres]
+    labels_short = [GENRE_SHORT.get(g, g) for g in sorted_genres]
+
+    ax.bar(x - width / 2, e1_vals, width, label="E1", color=COLOR_E1)
+    ax.bar(x + width / 2, e2_vals, width, label="E2", color=COLOR_E2)
+    ax.axhline(r10_overall[("pair", direction)] * 100, color=COLOR_E1, linestyle="--", linewidth=1.2, alpha=0.85)
+    ax.axhline(r10_overall[("genre", direction)] * 100, color=COLOR_E2, linestyle="--", linewidth=1.2, alpha=0.85)
+    ax.set_title(title, fontsize=12)
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels_short, rotation=45, ha="right", fontsize=8)
+    ax.set_ylabel("R@10 (%)", fontsize=10)
+    ax.set_ylim(0, 100)
+    ax.tick_params(axis="y", labelsize=8)
+    ax.legend(fontsize=9)
+
+fig.tight_layout()
+r10_out = output_dir / "per_genre_r10"
+fig.savefig(f"{r10_out}.pdf", bbox_inches="tight")
+fig.savefig(f"{r10_out}.png", dpi=300, bbox_inches="tight")
+plt.close(fig)
+print(f"Gespeichert: {r10_out}.pdf", flush=True)
+print(f"Gespeichert: {r10_out}.png", flush=True)
