@@ -274,6 +274,12 @@ for direction in ("V2A", "A2V"):
 fig, axes = plt.subplots(1, 2, figsize=(14, 5), sharey=True)
 width = 0.36
 
+e1_va = r10_by_model_dir_genre[("pair", "V2A")]
+e2_va = r10_by_model_dir_genre[("genre", "V2A")]
+sorted_genres = sorted(genres, key=lambda g: e1_va[g] - e2_va[g], reverse=True)
+labels_short = [GENRE_SHORT.get(g, g) for g in sorted_genres]
+x = np.arange(len(sorted_genres))
+
 for ax, direction, title in zip(
     axes,
     ("V2A", "A2V"),
@@ -281,11 +287,8 @@ for ax, direction, title in zip(
 ):
     e1 = r10_by_model_dir_genre[("pair", direction)]
     e2 = r10_by_model_dir_genre[("genre", direction)]
-    sorted_genres = sorted(genres, key=lambda g: e1[g] - e2[g], reverse=True)
-    x = np.arange(len(sorted_genres))
     e1_vals = [e1[g] * 100 for g in sorted_genres]
     e2_vals = [e2[g] * 100 for g in sorted_genres]
-    labels_short = [GENRE_SHORT.get(g, g) for g in sorted_genres]
 
     ax.bar(x - width / 2, e1_vals, width, label="E1", color=COLOR_E1)
     ax.bar(x + width / 2, e2_vals, width, label="E2", color=COLOR_E2)
