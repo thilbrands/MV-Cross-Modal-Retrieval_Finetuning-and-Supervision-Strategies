@@ -1,6 +1,8 @@
 #!/bin/bash
 #
-# Slurm-Job: comparison_eval (Stewart-kompatible Pool-Size Evaluation)
+# Slurm-Job: comparison_eval
+# Protocol A: stratifizierte Subsets à 1820 (avg über 2 Subsets)
+# Protocol B: voller Test-Split (N=3668)
 #
 # Start:
 #   sbatch jobs/comparison_eval.sh
