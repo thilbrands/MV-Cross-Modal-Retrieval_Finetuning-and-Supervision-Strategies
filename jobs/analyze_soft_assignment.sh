@@ -40,7 +40,7 @@ export PYTHONUNBUFFERED=1
 echo "Hostname: $(hostname) | Job: ${SLURM_JOB_ID:-local}"
 echo "DATASET_RUN_NAME: ${DATASET_RUN_NAME:-<neuester Run>}"
 echo "TRAINING_RUN_DIR: ${TRAINING_RUN_DIR:-<auto>}"
-echo "Starte analyze_soft_assignment.py …"
+echo "Starte analyze_soft_assignment.py (Δ_i + nearest-other confusion) …"
 
 python3 "$REPO_ROOT/analyze_soft_assignment.py"
 exit $?

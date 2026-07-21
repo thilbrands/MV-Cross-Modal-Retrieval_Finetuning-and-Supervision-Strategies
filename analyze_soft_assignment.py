@@ -14,6 +14,8 @@ Ausgabe (unter PLOT_OUTPUT_DIR / TRAINING_RUN_DIR / Dataset-Run):
   centroid_margin_boxplot.pdf/.png — Δ_i-Verteilung über Queries (E1–E3b, V→A / A→V)
   centroid_margin_per_genre.pdf/.png — Median-Δ pro Genre (Balken, E1–E3b)
   centroid_margin_rank_corr.pdf/.png — Scatter Δ vs. Rank
+  nearest_other_confusion.csv      — Counts: true genre × nearest other
+  nearest_other_confusion_{V2A,A2V}.pdf/.png — Heatmaps (row %)
 
 Env-Vars:
   DATASET_RUN_NAME, TRAINING_RUN_DIR, PAIR_RUN_DIR, GENRE_RUN_DIR,
@@ -34,6 +36,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sns
 import torch
 import torch.nn.functional as F
 from scipy.stats import pearsonr, spearmanr
@@ -73,6 +76,7 @@ GENRE_SHORT = {
     "Reggae": "Reggae",
     "Rock music": "Rock",
 }
+CLUSTER_GENRES = {"Electronic music", "Funk", "Hip hop music", "Pop music", "Reggae"}
 
 
 def _head_run(env_name: str, training_run_dir: Path | None, filename: str) -> Path | None:
@@ -192,6 +196,35 @@ def _style_ax(ax) -> None:
         spine.set_color("#666666")
 
 
+def _confusion_counts(
+    true_labels: np.ndarray,
+    nearest_other: np.ndarray,
+    genres: list[str],
+) -> np.ndarray:
+    """(G, G) Counts: Zeile = true genre, Spalte = nearest other (Diagonale = 0)."""
+    g = len(genres)
+    idx = {name: i for i, name in enumerate(genres)}
+    counts = np.zeros((g, g), dtype=np.float64)
+    for t, o in zip(true_labels, nearest_other):
+        counts[idx[str(t)], idx[str(o)]] += 1.0
+    return counts
+
+
+def _row_percent(counts: np.ndarray) -> np.ndarray:
+    row_sums = counts.sum(axis=1, keepdims=True)
+    row_sums[row_sums == 0] = 1.0
+    return 100.0 * counts / row_sums
+
+
+def _within_cluster_frac(true_labels: np.ndarray, nearest_other: np.ndarray) -> tuple[float, int]:
+    """Anteil Queries mit true∈Cluster, deren nearest other ebenfalls im Cluster liegt."""
+    mask = np.array([t in CLUSTER_GENRES for t in true_labels])
+    if not mask.any():
+        return float("nan"), 0
+    within = np.array([o in CLUSTER_GENRES for o in nearest_other[mask]])
+    return float(within.mean()), int(mask.sum())
+
+
 # --- Pfade ---
 run_name = os.environ.get("DATASET_RUN_NAME") or config.get_latest_run_name()
 if not run_name:
@@ -288,6 +321,7 @@ all_rows: list[dict] = []
 summary_rows: list[dict] = []
 delta_by_model_dir: dict[tuple[str, str], np.ndarray] = {}
 rank_by_model_dir: dict[tuple[str, str], np.ndarray] = {}
+nearest_other_by_model_dir: dict[tuple[str, str], np.ndarray] = {}
 median_delta_by_model_dir_genre: dict[tuple[str, str], dict[str, float]] = {}
 
 for model_key, model_label, v_emb, a_emb in configs:
@@ -303,6 +337,7 @@ for model_key, model_label, v_emb, a_emb in configs:
         ranks = _first_relevant_rank(sim, rel if direction == "V2A" else rel.T)
         delta_by_model_dir[(model_key, direction)] = delta
         rank_by_model_dir[(model_key, direction)] = ranks
+        nearest_other_by_model_dir[(model_key, direction)] = nearest_other
 
         genre_medians: dict[str, float] = {}
         genre_stat_rows: list[dict] = []
@@ -336,10 +371,12 @@ for model_key, model_label, v_emb, a_emb in configs:
         summary_rows.append(macro)
         median_delta_by_model_dir_genre[(model_key, direction)] = genre_medians
 
+        wc_frac, wc_n = _within_cluster_frac(labels, nearest_other)
         print(
             f"{model_label} {direction}: macro_median(Δ)={macro['delta_median']:.3f}  "
             f"macro_p05={macro['delta_p05']:.3f}  frac(Δ<0)={macro['frac_delta_neg']:.3f}  "
-            f"macro_Spearman={macro['spearman_delta_vs_rank']:.3f}",
+            f"macro_Spearman={macro['spearman_delta_vs_rank']:.3f}  "
+            f"cluster→cluster={wc_frac:.3f} (n_cluster={wc_n})",
             flush=True,
         )
 
@@ -477,5 +514,88 @@ fig.savefig(f"{corr_base}.pdf", bbox_inches="tight")
 fig.savefig(f"{corr_base}.png", dpi=300, bbox_inches="tight")
 plt.close(fig)
 print(f"Gespeichert: {corr_base}.pdf / .png", flush=True)
+
+# --- Nearest-other Confusion (true genre → nearest other centroid) ---
+confusion_rows: list[dict] = []
+genre_labels_short = [GENRE_SHORT.get(g, g) for g in genres]
+print(f"\nCluster genres: {sorted(CLUSTER_GENRES)}", flush=True)
+
+for direction, dir_title in (("V2A", "V→A"), ("A2V", "A→V")):
+    fig, axes = plt.subplots(
+        1, 5, figsize=(18, 4.6),
+        gridspec_kw={"width_ratios": [1, 1, 1, 1, 0.04]},
+    )
+    cax = axes[-1]
+    for i, (model_key, model_label) in enumerate(MODEL_ORDER):
+        ax = axes[i]
+        counts = _confusion_counts(labels, nearest_other_by_model_dir[(model_key, direction)], genres)
+        pct = _row_percent(counts)
+        for ti, true_g in enumerate(genres):
+            for oi, other_g in enumerate(genres):
+                if ti == oi:
+                    continue
+                confusion_rows.append({
+                    "model_key": model_key,
+                    "model": model_label,
+                    "direction": direction,
+                    "true_genre": true_g,
+                    "nearest_other_genre": other_g,
+                    "count": int(counts[ti, oi]),
+                    "row_percent": float(pct[ti, oi]),
+                    "both_in_cluster": int(
+                        true_g in CLUSTER_GENRES and other_g in CLUSTER_GENRES
+                    ),
+                })
+
+        sns.heatmap(
+            pct,
+            ax=ax,
+            vmin=0,
+            vmax=40,
+            cmap="YlOrRd",
+            annot=True,
+            fmt=".0f",
+            annot_kws={"size": 5.5},
+            linewidths=0.4,
+            linecolor="white",
+            xticklabels=genre_labels_short,
+            yticklabels=genre_labels_short,
+            cbar=i == len(MODEL_ORDER) - 1,
+            cbar_ax=cax if i == len(MODEL_ORDER) - 1 else None,
+            mask=np.eye(len(genres), dtype=bool),
+        )
+        wc_frac, _ = _within_cluster_frac(labels, nearest_other_by_model_dir[(model_key, direction)])
+        ax.set_title(f"{model_label}\ncluster→cluster={wc_frac*100:.0f}%", fontsize=9)
+        ax.tick_params(axis="both", labelsize=7)
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha="right")
+        ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
+        ax.set_xlabel("Nearest other genre", fontsize=8)
+        if i == 0:
+            ax.set_ylabel("True query genre", fontsize=9)
+        else:
+            ax.set_ylabel("")
+
+    cax.tick_params(labelsize=8)
+    cax.set_ylabel("Row %", fontsize=9)
+    fig.suptitle(f"Nearest-other centroid confusion — {dir_title}", fontsize=11, y=1.02)
+    fig.tight_layout()
+    conf_base = output_dir / f"nearest_other_confusion_{direction}"
+    fig.savefig(f"{conf_base}.pdf", bbox_inches="tight")
+    fig.savefig(f"{conf_base}.png", dpi=300, bbox_inches="tight")
+    plt.close(fig)
+    print(f"Gespeichert: {conf_base}.pdf / .png", flush=True)
+
+conf_csv = output_dir / "nearest_other_confusion.csv"
+with open(conf_csv, "w", newline="", encoding="utf-8") as f:
+    writer = csv.DictWriter(
+        f,
+        fieldnames=[
+            "model_key", "model", "direction", "true_genre", "nearest_other_genre",
+            "count", "row_percent", "both_in_cluster",
+        ],
+    )
+    writer.writeheader()
+    writer.writerows(confusion_rows)
+print(f"Gespeichert: {conf_csv}", flush=True)
 
 print("\nFertig.", flush=True)
