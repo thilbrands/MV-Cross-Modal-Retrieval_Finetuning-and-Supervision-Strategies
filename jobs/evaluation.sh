@@ -5,7 +5,8 @@
 #
 # Nutzung (vom Repo-Root auf dem Cluster):
 #   sbatch jobs/evaluation.sh
-#   sbatch --export=DATASET_RUN_NAME=2026-03-13_18-02-30_audioset jobs/evaluation.sh
+#   sbatch --export=DATASET_RUN_NAME=...,TRAINING_RUN_DIR=... jobs/evaluation.sh
+#   sbatch --export=DATASET_RUN_NAME=...,TRAINING_RUN_DIR=...,AE_PAIR_RUN_DIR=...,AE_GENRE_RUN_DIR=...,EVAL_OUTPUT_DIR=/work2/.../eval_bootstrap jobs/evaluation.sh
 #
 
 #SBATCH --job-name=evaluation

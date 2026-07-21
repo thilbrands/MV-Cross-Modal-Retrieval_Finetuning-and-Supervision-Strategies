@@ -1,12 +1,16 @@
 """
 Evaluation: MRR, Recall@1/5/10, Mean Rank. V→A und A→V.
+
+Zusätzlich: 95%-Bootstrap-CIs (Perzentilmethode) über Queries.
+  BOOTSTRAP_B=10000 (default; 0 = aus)
+  BOOTSTRAP_SEED=42
 """
 import json
 import os
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import torch
@@ -19,15 +23,21 @@ import config
 from dataset import PairDataset
 from models import ProjectionHead, load_projection_heads_pair, load_projection_heads_genre, load_audio_encoder_heads_pair, load_audio_encoder_heads_genre
 from metrics import (
-    MRR,
-    recall_at_k,
     precision_at_k,
-    mean_rank,
     labels_from_split_csv,
     label_relevance_matrix,
     pair_relevance_matrix,
+    per_query_first_relevant_rank,
+    per_query_reciprocal_rank,
+    per_query_recall_at_k,
+    bootstrap_mean_ci,
+    bootstrap_diff_ci,
 )
-from training_metrics import save_evaluation_results_csv
+from training_metrics import save_evaluation_results_csv, save_evaluation_diff_csv
+
+BOOTSTRAP_B = int(os.environ.get("BOOTSTRAP_B", "10000"))
+BOOTSTRAP_SEED = int(os.environ.get("BOOTSTRAP_SEED", "42"))
+BASELINE_KEY = "baseline"
 
 # Run: aus Umgebung oder neuester
 run_name = os.environ.get("DATASET_RUN_NAME") or config.get_latest_run_name()
@@ -88,6 +98,7 @@ _out(f"Pair-based Head: {pair_path or config.PROJECTION_HEADS_PATH} (train commi
 _out(f"Genre-based Head: {genre_path or config.PROJECTION_HEADS_GENRE_PATH} (train commit: {_meta_commit(genre_run_dir, 'meta_genre.json') or '-'})")
 _out(f"Audio-Encoder Pair: {ae_pair_path or '-'}")
 _out(f"Audio-Encoder Genre: {ae_genre_path or '-'}")
+_out(f"Bootstrap: B={BOOTSTRAP_B} seed={BOOTSTRAP_SEED} (95% CI)")
 
 test_ds = PairDataset("test", TRAIN_VAL_TEST_SPLIT_CSV, EMBEDDINGS_DIR)
 test_loader = DataLoader(test_ds, batch_size=32, shuffle=False, num_workers=0)
@@ -164,20 +175,57 @@ EVAL_PROTOCOLS = [
 ]
 
 results_rows: List[dict] = []
+diff_rows: List[dict] = []
+# (protocol, direction, model_key) -> per-query metric arrays
+_per_query: Dict[Tuple[str, str, str], Dict[str, np.ndarray]] = {}
 
 
-def _compute_metrics(sim, relevance, with_precision: bool = False) -> dict:
+def _fmt_ci(mean: float, low: float, high: float) -> str:
+    return f"{mean:.4f} [{low:.4f}, {high:.4f}]"
+
+
+def _compute_metrics_with_ci(sim, relevance, with_precision: bool = False) -> Tuple[dict, Dict[str, np.ndarray]]:
+    rr = per_query_reciprocal_rank(sim, relevance)
+    r1 = per_query_recall_at_k(sim, 1, relevance)
+    r5 = per_query_recall_at_k(sim, 5, relevance)
+    r10 = per_query_recall_at_k(sim, 10, relevance)
+    ranks = per_query_first_relevant_rank(sim, relevance)
+    ranks_pos = ranks[ranks > 0]
+
+    mrr, mrr_lo, mrr_hi = bootstrap_mean_ci(rr, BOOTSTRAP_B, seed=BOOTSTRAP_SEED)
+    recall_at_1, r1_lo, r1_hi = bootstrap_mean_ci(r1, BOOTSTRAP_B, seed=BOOTSTRAP_SEED)
+    recall_at_5, r5_lo, r5_hi = bootstrap_mean_ci(r5, BOOTSTRAP_B, seed=BOOTSTRAP_SEED)
+    recall_at_10, r10_lo, r10_hi = bootstrap_mean_ci(r10, BOOTSTRAP_B, seed=BOOTSTRAP_SEED)
+    mr, mr_lo, mr_hi = bootstrap_mean_ci(ranks_pos if len(ranks_pos) else ranks, BOOTSTRAP_B, seed=BOOTSTRAP_SEED)
+
     metrics = {
-        "mrr": float(MRR(sim, relevance=relevance)),
-        "recall_at_1": float(recall_at_k(sim, 1, relevance=relevance)),
-        "recall_at_5": float(recall_at_k(sim, 5, relevance=relevance)),
-        "recall_at_10": float(recall_at_k(sim, 10, relevance=relevance)),
-        "mean_rank": float(mean_rank(sim, relevance=relevance)),
+        "mrr": mrr,
+        "mrr_ci_low": mrr_lo,
+        "mrr_ci_high": mrr_hi,
+        "recall_at_1": recall_at_1,
+        "recall_at_1_ci_low": r1_lo,
+        "recall_at_1_ci_high": r1_hi,
+        "recall_at_5": recall_at_5,
+        "recall_at_5_ci_low": r5_lo,
+        "recall_at_5_ci_high": r5_hi,
+        "recall_at_10": recall_at_10,
+        "recall_at_10_ci_low": r10_lo,
+        "recall_at_10_ci_high": r10_hi,
+        "mean_rank": mr,
+        "mean_rank_ci_low": mr_lo,
+        "mean_rank_ci_high": mr_hi,
+        "bootstrap_B": BOOTSTRAP_B,
+        "bootstrap_seed": BOOTSTRAP_SEED,
     }
     if with_precision:
         metrics["precision_at_1"] = float(precision_at_k(sim, 1, relevance=relevance))
         metrics["precision_at_10"] = float(precision_at_k(sim, 10, relevance=relevance))
-    return metrics
+    else:
+        metrics["precision_at_1"] = ""
+        metrics["precision_at_10"] = ""
+
+    per_q = {"mrr": rr, "recall_at_1": r1, "recall_at_5": r5, "recall_at_10": r10, "rank": ranks}
+    return metrics, per_q
 
 
 def _record_metrics(
@@ -189,8 +237,8 @@ def _record_metrics(
     sim,
     relevance,
 ) -> None:
-    # Precision@k nur für Protocol B (Genre) sinnvoll – bei Protocol A gibt es genau 1 relevanten Treffer.
-    metrics = _compute_metrics(sim, relevance, with_precision=(protocol == "B"))
+    metrics, per_q = _compute_metrics_with_ci(sim, relevance, with_precision=(protocol == "B"))
+    _per_query[(protocol, direction, model_key)] = per_q
     results_rows.append({
         "protocol": protocol,
         "protocol_name": protocol_name,
@@ -201,17 +249,17 @@ def _record_metrics(
     })
     _out(f"  {model}")
     line = (
-        "    MRR: " + str(metrics["mrr"])
-        + " | Recall@1: " + str(metrics["recall_at_1"])
-        + " | Recall@5: " + str(metrics["recall_at_5"])
-        + " | Recall@10: " + str(metrics["recall_at_10"])
+        "    MRR: " + _fmt_ci(metrics["mrr"], metrics["mrr_ci_low"], metrics["mrr_ci_high"])
+        + " | R@1: " + _fmt_ci(metrics["recall_at_1"], metrics["recall_at_1_ci_low"], metrics["recall_at_1_ci_high"])
+        + " | R@5: " + _fmt_ci(metrics["recall_at_5"], metrics["recall_at_5_ci_low"], metrics["recall_at_5_ci_high"])
+        + " | R@10: " + _fmt_ci(metrics["recall_at_10"], metrics["recall_at_10_ci_low"], metrics["recall_at_10_ci_high"])
     )
-    if "precision_at_1" in metrics:
+    if metrics.get("precision_at_1") != "":
         line += (
-            " | Precision@1: " + str(metrics["precision_at_1"])
-            + " | Precision@10: " + str(metrics["precision_at_10"])
+            " | P@1: " + str(metrics["precision_at_1"])
+            + " | P@10: " + str(metrics["precision_at_10"])
         )
-    line += " | Mean Rank: " + str(metrics["mean_rank"])
+    line += " | MR: " + _fmt_ci(metrics["mean_rank"], metrics["mean_rank_ci_low"], metrics["mean_rank_ci_high"])
     _out(line)
 
 
@@ -235,17 +283,66 @@ for protocol_id, protocol_key, protocol_title, relevance in EVAL_PROTOCOLS:
             )
         _out("")
 
+# Gepaarte Bootstrap-Differenzen vs. Baseline (MRR, R@10)
+_out("=== Bootstrap-Differenzen vs. Baseline (95% CI) ===")
+for protocol_id, protocol_key, _, _ in EVAL_PROTOCOLS:
+    for direction in ("V2A", "A2V"):
+        base_key = (protocol_id, direction, BASELINE_KEY)
+        if base_key not in _per_query:
+            continue
+        base = _per_query[base_key]
+        _out(f"  [{protocol_id} {direction}]")
+        for model_key, model_name, _ in EVAL_MODELS:
+            if model_key == BASELINE_KEY:
+                continue
+            key = (protocol_id, direction, model_key)
+            if key not in _per_query:
+                continue
+            cur = _per_query[key]
+            for metric_name, arr_name in (("mrr", "mrr"), ("recall_at_10", "recall_at_10")):
+                diff, lo, hi = bootstrap_diff_ci(
+                    cur[arr_name], base[arr_name], BOOTSTRAP_B, seed=BOOTSTRAP_SEED
+                )
+                excludes0 = int(lo > 0 or hi < 0)
+                diff_rows.append({
+                    "protocol": protocol_id,
+                    "protocol_name": protocol_key,
+                    "direction": direction,
+                    "model_key": model_key,
+                    "model": model_name,
+                    "baseline_key": BASELINE_KEY,
+                    "metric": metric_name,
+                    "diff": diff,
+                    "diff_ci_low": lo,
+                    "diff_ci_high": hi,
+                    "ci_excludes_zero": excludes0,
+                    "bootstrap_B": BOOTSTRAP_B,
+                    "bootstrap_seed": BOOTSTRAP_SEED,
+                })
+                star = "*" if excludes0 else ""
+                _out(
+                    f"    {model_name} − Baseline | {metric_name}: "
+                    f"{diff:+.4f} [{lo:+.4f}, {hi:+.4f}]{star}"
+                )
+        _out("")
+_out("  (* = 95%-CI enthält 0 nicht)")
+
+
 def _eval_output_dir() -> Path:
-    if os.environ.get("TRAINING_RUN_DIR"):
-        return Path(os.environ["TRAINING_RUN_DIR"])
+    # Expliziter Output-Ordner hat Vorrang (alte Eval nicht überschreiben).
     if os.environ.get("EVAL_OUTPUT_DIR"):
         return Path(os.environ["EVAL_OUTPUT_DIR"])
+    if os.environ.get("TRAINING_RUN_DIR"):
+        return Path(os.environ["TRAINING_RUN_DIR"])
     if pair_run_dir:
         return pair_run_dir
     return config.TRAINING_RUNS_ROOT / f"evaluation_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
 
 
 def _ae_runs_differ_from_training_dir() -> bool:
+    """Nur relevant, wenn Ergebnisse in TRAINING_RUN_DIR geschrieben würden."""
+    if os.environ.get("EVAL_OUTPUT_DIR"):
+        return False
     if not os.environ.get("TRAINING_RUN_DIR"):
         return False
     train_dir = Path(os.environ["TRAINING_RUN_DIR"]).resolve()
@@ -258,21 +355,28 @@ def _ae_runs_differ_from_training_dir() -> bool:
 if _ae_runs_differ_from_training_dir():
     _out(
         "Hinweis: AE_PAIR_RUN_DIR/AE_GENRE_RUN_DIR weichen von TRAINING_RUN_DIR ab — "
-        "keine Dateien im Train-Ordner geschrieben (Ergebnis nur im Slurm-Log)."
+        "keine Dateien im Train-Ordner geschrieben (Ergebnis nur im Slurm-Log). "
+        "Oder EVAL_OUTPUT_DIR setzen."
     )
     print("", flush=True)
     sys.exit(0)
 
 output_dir = _eval_output_dir()
 output_dir.mkdir(parents=True, exist_ok=True)
+_out(f"Eval-Output-Dir: {output_dir}")
 results_csv = output_dir / "results_evaluation.csv"
 save_evaluation_results_csv(results_rows, results_csv)
+diff_csv = output_dir / "results_evaluation_bootstrap_diff.csv"
+save_evaluation_diff_csv(diff_rows, diff_csv)
 
 eval_meta = {
     "timestamp": datetime.now().isoformat(),
     "git_commit_eval": config.get_git_commit(),
     "dataset_run": run_name,
     "n_test": len(test_ds),
+    "bootstrap_B": BOOTSTRAP_B,
+    "bootstrap_seed": BOOTSTRAP_SEED,
+    "bootstrap_alpha": 0.05,
     "pair_head_path": str(pair_path or config.PROJECTION_HEADS_PATH),
     "genre_head_path": str(genre_path or config.PROJECTION_HEADS_GENRE_PATH),
     "audio_encoder_pair_path": str(ae_pair_path or ""),
@@ -280,12 +384,14 @@ eval_meta = {
     "pair_train_commit": _meta_commit(pair_run_dir, "meta_pair.json") or None,
     "genre_train_commit": _meta_commit(genre_run_dir, "meta_genre.json") or None,
     "results_csv": str(results_csv),
+    "bootstrap_diff_csv": str(diff_csv),
 }
 eval_meta_path = output_dir / "meta_evaluation.json"
 with open(eval_meta_path, "w", encoding="utf-8") as f:
     json.dump(eval_meta, f, indent=2)
 
 _out(f"Metriken-CSV: {results_csv}")
+_out(f"Bootstrap-Diff-CSV: {diff_csv}")
 _out(f"Eval-Metadaten: {eval_meta_path}")
 
 out_path = output_dir / "evaluation_output.txt"
@@ -296,3 +402,4 @@ with open(out_path, "w", encoding="utf-8") as f:
 print("", flush=True)
 print("Gespeichert: " + str(out_path), flush=True)
 print("Gespeichert: " + str(results_csv), flush=True)
+print("Gespeichert: " + str(diff_csv), flush=True)

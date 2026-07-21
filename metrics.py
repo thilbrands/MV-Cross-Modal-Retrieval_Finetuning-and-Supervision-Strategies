@@ -178,3 +178,104 @@ def mean_rank(
         if r > 0:
             ranks.append(r)
     return sum(ranks) / len(ranks) if ranks else 0.0
+
+
+def per_query_first_relevant_rank(
+    sim: torch.Tensor,
+    relevance: Union[np.ndarray, torch.Tensor, list],
+) -> np.ndarray:
+    """1-basierter Rang des ersten relevanten Treffers pro Query (0 wenn keiner)."""
+    n = sim.size(0)
+    m = sim.size(1)
+    rel = _as_relevance_matrix(relevance, n, m)
+    ranks = np.zeros(n, dtype=np.float64)
+    for i in range(n):
+        ranks[i] = _first_relevant_rank_mask(sim[i], rel[i])
+    return ranks
+
+
+def per_query_reciprocal_rank(
+    sim: torch.Tensor,
+    relevance: Union[np.ndarray, torch.Tensor, list],
+) -> np.ndarray:
+    ranks = per_query_first_relevant_rank(sim, relevance)
+    rr = np.zeros_like(ranks)
+    pos = ranks > 0
+    rr[pos] = 1.0 / ranks[pos]
+    return rr
+
+
+def per_query_recall_at_k(
+    sim: torch.Tensor,
+    k: int,
+    relevance: Union[np.ndarray, torch.Tensor, list],
+) -> np.ndarray:
+    """Pro Query 1.0 wenn >=1 Relevanter in Top-k, sonst 0.0."""
+    n = sim.size(0)
+    m = sim.size(1)
+    rel = _as_relevance_matrix(relevance, n, m)
+    hits = np.zeros(n, dtype=np.float64)
+    for i in range(n):
+        top_k = torch.argsort(sim[i], descending=True)[:k]
+        if any(bool(rel[i, int(j)]) for j in top_k.tolist()):
+            hits[i] = 1.0
+    return hits
+
+
+def bootstrap_mean_ci(
+    values: np.ndarray,
+    n_bootstrap: int = 10000,
+    alpha: float = 0.05,
+    seed: int = 42,
+) -> tuple[float, float, float]:
+    """
+    Bootstrap-Mittelwert und (1-alpha)-CI (Perzentilmethode).
+
+    Returns:
+      (mean, ci_low, ci_high)
+    """
+    values = np.asarray(values, dtype=np.float64)
+    n = len(values)
+    if n == 0:
+        return 0.0, 0.0, 0.0
+    mean = float(values.mean())
+    if n_bootstrap <= 0 or n == 1:
+        return mean, mean, mean
+    rng = np.random.default_rng(seed)
+    # (B, n) Indizes → Mittelwerte über Queries
+    idx = rng.integers(0, n, size=(n_bootstrap, n))
+    boots = values[idx].mean(axis=1)
+    low = float(np.quantile(boots, alpha / 2))
+    high = float(np.quantile(boots, 1.0 - alpha / 2))
+    return mean, low, high
+
+
+def bootstrap_diff_ci(
+    values_a: np.ndarray,
+    values_b: np.ndarray,
+    n_bootstrap: int = 10000,
+    alpha: float = 0.05,
+    seed: int = 42,
+) -> tuple[float, float, float]:
+    """
+    Gepaartes Bootstrap-CI für mean(a) - mean(b) (gleiche Query-Indizes).
+
+    Returns:
+      (diff_mean, ci_low, ci_high)
+    """
+    a = np.asarray(values_a, dtype=np.float64)
+    b = np.asarray(values_b, dtype=np.float64)
+    if len(a) != len(b):
+        raise ValueError("values_a und values_b müssen gleich lang sein (gepaarte Queries).")
+    n = len(a)
+    if n == 0:
+        return 0.0, 0.0, 0.0
+    diff_mean = float(a.mean() - b.mean())
+    if n_bootstrap <= 0 or n == 1:
+        return diff_mean, diff_mean, diff_mean
+    rng = np.random.default_rng(seed)
+    idx = rng.integers(0, n, size=(n_bootstrap, n))
+    boots = a[idx].mean(axis=1) - b[idx].mean(axis=1)
+    low = float(np.quantile(boots, alpha / 2))
+    high = float(np.quantile(boots, 1.0 - alpha / 2))
+    return diff_mean, low, high
