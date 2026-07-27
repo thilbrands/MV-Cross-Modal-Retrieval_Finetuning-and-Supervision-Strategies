@@ -1,0 +1,721 @@
+model_key,model,direction,true_genre,nearest_other_genre,count,row_percent,both_in_cluster
+pair,E1,V2A,Blues,Classical music,16,4.359673024523161,0
+pair,E1,V2A,Blues,Country,124,33.787465940054496,0
+pair,E1,V2A,Blues,Electronic music,23,6.267029972752043,0
+pair,E1,V2A,Blues,Funk,15,4.087193460490464,0
+pair,E1,V2A,Blues,Hip hop music,18,4.9046321525885554,0
+pair,E1,V2A,Blues,Jazz,46,12.534059945504087,0
+pair,E1,V2A,Blues,Pop music,20,5.449591280653951,0
+pair,E1,V2A,Blues,Reggae,17,4.632152588555858,0
+pair,E1,V2A,Blues,Rock music,88,23.978201634877383,0
+pair,E1,V2A,Classical music,Blues,8,2.185792349726776,0
+pair,E1,V2A,Classical music,Country,155,42.349726775956285,0
+pair,E1,V2A,Classical music,Electronic music,44,12.021857923497267,0
+pair,E1,V2A,Classical music,Funk,4,1.092896174863388,0
+pair,E1,V2A,Classical music,Hip hop music,2,0.546448087431694,0
+pair,E1,V2A,Classical music,Jazz,136,37.15846994535519,0
+pair,E1,V2A,Classical music,Pop music,6,1.639344262295082,0
+pair,E1,V2A,Classical music,Reggae,3,0.819672131147541,0
+pair,E1,V2A,Classical music,Rock music,8,2.185792349726776,0
+pair,E1,V2A,Country,Blues,148,40.32697547683924,0
+pair,E1,V2A,Country,Classical music,77,20.980926430517712,0
+pair,E1,V2A,Country,Electronic music,12,3.2697547683923704,0
+pair,E1,V2A,Country,Funk,17,4.632152588555858,0
+pair,E1,V2A,Country,Hip hop music,9,2.4523160762942777,0
+pair,E1,V2A,Country,Jazz,25,6.8119891008174385,0
+pair,E1,V2A,Country,Pop music,27,7.356948228882834,0
+pair,E1,V2A,Country,Reggae,11,2.997275204359673,0
+pair,E1,V2A,Country,Rock music,41,11.1716621253406,0
+pair,E1,V2A,Electronic music,Blues,8,2.1798365122615806,0
+pair,E1,V2A,Electronic music,Classical music,10,2.7247956403269753,0
+pair,E1,V2A,Electronic music,Country,3,0.8174386920980926,0
+pair,E1,V2A,Electronic music,Funk,89,24.250681198910083,1
+pair,E1,V2A,Electronic music,Hip hop music,104,28.337874659400544,1
+pair,E1,V2A,Electronic music,Jazz,3,0.8174386920980926,0
+pair,E1,V2A,Electronic music,Pop music,65,17.71117166212534,1
+pair,E1,V2A,Electronic music,Reggae,14,3.8147138964577656,1
+pair,E1,V2A,Electronic music,Rock music,71,19.346049046321525,0
+pair,E1,V2A,Funk,Blues,30,8.174386920980927,0
+pair,E1,V2A,Funk,Classical music,9,2.4523160762942777,0
+pair,E1,V2A,Funk,Country,19,5.177111716621253,0
+pair,E1,V2A,Funk,Electronic music,78,21.25340599455041,1
+pair,E1,V2A,Funk,Hip hop music,64,17.438692098092645,1
+pair,E1,V2A,Funk,Jazz,14,3.8147138964577656,0
+pair,E1,V2A,Funk,Pop music,47,12.806539509536785,1
+pair,E1,V2A,Funk,Reggae,58,15.803814713896458,1
+pair,E1,V2A,Funk,Rock music,48,13.079019073569482,0
+pair,E1,V2A,Hip hop music,Blues,1,0.2724795640326976,0
+pair,E1,V2A,Hip hop music,Classical music,1,0.2724795640326976,0
+pair,E1,V2A,Hip hop music,Country,3,0.8174386920980926,0
+pair,E1,V2A,Hip hop music,Electronic music,82,22.3433242506812,1
+pair,E1,V2A,Hip hop music,Funk,28,7.629427792915531,1
+pair,E1,V2A,Hip hop music,Jazz,1,0.2724795640326976,0
+pair,E1,V2A,Hip hop music,Pop music,30,8.174386920980927,1
+pair,E1,V2A,Hip hop music,Reggae,198,53.950953678474114,1
+pair,E1,V2A,Hip hop music,Rock music,23,6.267029972752043,0
+pair,E1,V2A,Jazz,Blues,58,15.803814713896458,0
+pair,E1,V2A,Jazz,Classical music,97,26.430517711171664,0
+pair,E1,V2A,Jazz,Country,64,17.438692098092645,0
+pair,E1,V2A,Jazz,Electronic music,28,7.629427792915531,0
+pair,E1,V2A,Jazz,Funk,20,5.449591280653951,0
+pair,E1,V2A,Jazz,Hip hop music,24,6.539509536784741,0
+pair,E1,V2A,Jazz,Pop music,17,4.632152588555858,0
+pair,E1,V2A,Jazz,Reggae,20,5.449591280653951,0
+pair,E1,V2A,Jazz,Rock music,39,10.626702997275205,0
+pair,E1,V2A,Pop music,Blues,15,4.087193460490464,0
+pair,E1,V2A,Pop music,Classical music,9,2.4523160762942777,0
+pair,E1,V2A,Pop music,Country,22,5.994550408719346,0
+pair,E1,V2A,Pop music,Electronic music,63,17.166212534059945,1
+pair,E1,V2A,Pop music,Funk,55,14.986376021798366,1
+pair,E1,V2A,Pop music,Hip hop music,77,20.980926430517712,1
+pair,E1,V2A,Pop music,Jazz,5,1.3623978201634876,0
+pair,E1,V2A,Pop music,Reggae,33,8.991825613079019,1
+pair,E1,V2A,Pop music,Rock music,88,23.978201634877383,0
+pair,E1,V2A,Reggae,Blues,21,5.737704918032787,0
+pair,E1,V2A,Reggae,Classical music,8,2.185792349726776,0
+pair,E1,V2A,Reggae,Country,7,1.9125683060109289,0
+pair,E1,V2A,Reggae,Electronic music,45,12.295081967213115,1
+pair,E1,V2A,Reggae,Funk,95,25.956284153005466,1
+pair,E1,V2A,Reggae,Hip hop music,134,36.612021857923494,1
+pair,E1,V2A,Reggae,Jazz,13,3.551912568306011,0
+pair,E1,V2A,Reggae,Pop music,19,5.191256830601093,1
+pair,E1,V2A,Reggae,Rock music,24,6.557377049180328,0
+pair,E1,V2A,Rock music,Blues,148,40.32697547683924,0
+pair,E1,V2A,Rock music,Classical music,5,1.3623978201634876,0
+pair,E1,V2A,Rock music,Country,21,5.722070844686648,0
+pair,E1,V2A,Rock music,Electronic music,83,22.615803814713896,0
+pair,E1,V2A,Rock music,Funk,34,9.264305177111716,0
+pair,E1,V2A,Rock music,Hip hop music,5,1.3623978201634876,0
+pair,E1,V2A,Rock music,Jazz,14,3.8147138964577656,0
+pair,E1,V2A,Rock music,Pop music,51,13.896457765667575,0
+pair,E1,V2A,Rock music,Reggae,6,1.6348773841961852,0
+genre,E2,V2A,Blues,Classical music,27,7.356948228882834,0
+genre,E2,V2A,Blues,Country,102,27.79291553133515,0
+genre,E2,V2A,Blues,Electronic music,18,4.9046321525885554,0
+genre,E2,V2A,Blues,Funk,0,0.0,0
+genre,E2,V2A,Blues,Hip hop music,24,6.539509536784741,0
+genre,E2,V2A,Blues,Jazz,55,14.986376021798366,0
+genre,E2,V2A,Blues,Pop music,24,6.539509536784741,0
+genre,E2,V2A,Blues,Reggae,16,4.359673024523161,0
+genre,E2,V2A,Blues,Rock music,101,27.52043596730245,0
+genre,E2,V2A,Classical music,Blues,2,0.546448087431694,0
+genre,E2,V2A,Classical music,Country,103,28.14207650273224,0
+genre,E2,V2A,Classical music,Electronic music,9,2.459016393442623,0
+genre,E2,V2A,Classical music,Funk,0,0.0,0
+genre,E2,V2A,Classical music,Hip hop music,3,0.819672131147541,0
+genre,E2,V2A,Classical music,Jazz,241,65.84699453551913,0
+genre,E2,V2A,Classical music,Pop music,0,0.0,0
+genre,E2,V2A,Classical music,Reggae,2,0.546448087431694,0
+genre,E2,V2A,Classical music,Rock music,6,1.639344262295082,0
+genre,E2,V2A,Country,Blues,214,58.310626702997276,0
+genre,E2,V2A,Country,Classical music,48,13.079019073569482,0
+genre,E2,V2A,Country,Electronic music,12,3.2697547683923704,0
+genre,E2,V2A,Country,Funk,1,0.2724795640326976,0
+genre,E2,V2A,Country,Hip hop music,4,1.0899182561307903,0
+genre,E2,V2A,Country,Jazz,25,6.8119891008174385,0
+genre,E2,V2A,Country,Pop music,15,4.087193460490464,0
+genre,E2,V2A,Country,Reggae,8,2.1798365122615806,0
+genre,E2,V2A,Country,Rock music,40,10.899182561307901,0
+genre,E2,V2A,Electronic music,Blues,3,0.8174386920980926,0
+genre,E2,V2A,Electronic music,Classical music,19,5.177111716621253,0
+genre,E2,V2A,Electronic music,Country,12,3.2697547683923704,0
+genre,E2,V2A,Electronic music,Funk,25,6.8119891008174385,1
+genre,E2,V2A,Electronic music,Hip hop music,146,39.782016348773844,1
+genre,E2,V2A,Electronic music,Jazz,9,2.4523160762942777,0
+genre,E2,V2A,Electronic music,Pop music,51,13.896457765667575,1
+genre,E2,V2A,Electronic music,Reggae,13,3.542234332425068,1
+genre,E2,V2A,Electronic music,Rock music,89,24.250681198910083,0
+genre,E2,V2A,Funk,Blues,4,1.0899182561307903,0
+genre,E2,V2A,Funk,Classical music,12,3.2697547683923704,0
+genre,E2,V2A,Funk,Country,33,8.991825613079019,0
+genre,E2,V2A,Funk,Electronic music,67,18.256130790190735,1
+genre,E2,V2A,Funk,Hip hop music,74,20.16348773841962,1
+genre,E2,V2A,Funk,Jazz,22,5.994550408719346,0
+genre,E2,V2A,Funk,Pop music,36,9.809264305177111,1
+genre,E2,V2A,Funk,Reggae,51,13.896457765667575,1
+genre,E2,V2A,Funk,Rock music,68,18.52861035422343,0
+genre,E2,V2A,Hip hop music,Blues,0,0.0,0
+genre,E2,V2A,Hip hop music,Classical music,2,0.5449591280653951,0
+genre,E2,V2A,Hip hop music,Country,4,1.0899182561307903,0
+genre,E2,V2A,Hip hop music,Electronic music,95,25.885558583106267,1
+genre,E2,V2A,Hip hop music,Funk,3,0.8174386920980926,1
+genre,E2,V2A,Hip hop music,Jazz,4,1.0899182561307903,0
+genre,E2,V2A,Hip hop music,Pop music,15,4.087193460490464,1
+genre,E2,V2A,Hip hop music,Reggae,231,62.94277929155314,1
+genre,E2,V2A,Hip hop music,Rock music,13,3.542234332425068,0
+genre,E2,V2A,Jazz,Blues,93,25.340599455040874,0
+genre,E2,V2A,Jazz,Classical music,82,22.3433242506812,0
+genre,E2,V2A,Jazz,Country,59,16.076294277929154,0
+genre,E2,V2A,Jazz,Electronic music,22,5.994550408719346,0
+genre,E2,V2A,Jazz,Funk,5,1.3623978201634876,0
+genre,E2,V2A,Jazz,Hip hop music,24,6.539509536784741,0
+genre,E2,V2A,Jazz,Pop music,27,7.356948228882834,0
+genre,E2,V2A,Jazz,Reggae,17,4.632152588555858,0
+genre,E2,V2A,Jazz,Rock music,38,10.354223433242506,0
+genre,E2,V2A,Pop music,Blues,10,2.7247956403269753,0
+genre,E2,V2A,Pop music,Classical music,9,2.4523160762942777,0
+genre,E2,V2A,Pop music,Country,36,9.809264305177111,0
+genre,E2,V2A,Pop music,Electronic music,43,11.716621253405995,1
+genre,E2,V2A,Pop music,Funk,36,9.809264305177111,1
+genre,E2,V2A,Pop music,Hip hop music,106,28.88283378746594,1
+genre,E2,V2A,Pop music,Jazz,20,5.449591280653951,0
+genre,E2,V2A,Pop music,Reggae,22,5.994550408719346,1
+genre,E2,V2A,Pop music,Rock music,85,23.160762942779293,0
+genre,E2,V2A,Reggae,Blues,9,2.459016393442623,0
+genre,E2,V2A,Reggae,Classical music,8,2.185792349726776,0
+genre,E2,V2A,Reggae,Country,13,3.551912568306011,0
+genre,E2,V2A,Reggae,Electronic music,41,11.202185792349727,1
+genre,E2,V2A,Reggae,Funk,52,14.207650273224044,1
+genre,E2,V2A,Reggae,Hip hop music,185,50.54644808743169,1
+genre,E2,V2A,Reggae,Jazz,17,4.644808743169399,0
+genre,E2,V2A,Reggae,Pop music,11,3.0054644808743167,1
+genre,E2,V2A,Reggae,Rock music,30,8.19672131147541,0
+genre,E2,V2A,Rock music,Blues,219,59.67302452316076,0
+genre,E2,V2A,Rock music,Classical music,7,1.9073569482288828,0
+genre,E2,V2A,Rock music,Country,39,10.626702997275205,0
+genre,E2,V2A,Rock music,Electronic music,36,9.809264305177111,0
+genre,E2,V2A,Rock music,Funk,3,0.8174386920980926,0
+genre,E2,V2A,Rock music,Hip hop music,12,3.2697547683923704,0
+genre,E2,V2A,Rock music,Jazz,15,4.087193460490464,0
+genre,E2,V2A,Rock music,Pop music,29,7.901907356948229,0
+genre,E2,V2A,Rock music,Reggae,7,1.9073569482288828,0
+audio_encoder_pair,E3a,V2A,Blues,Classical music,17,4.632152588555858,0
+audio_encoder_pair,E3a,V2A,Blues,Country,99,26.975476839237057,0
+audio_encoder_pair,E3a,V2A,Blues,Electronic music,23,6.267029972752043,0
+audio_encoder_pair,E3a,V2A,Blues,Funk,24,6.539509536784741,0
+audio_encoder_pair,E3a,V2A,Blues,Hip hop music,26,7.084468664850136,0
+audio_encoder_pair,E3a,V2A,Blues,Jazz,50,13.623978201634877,0
+audio_encoder_pair,E3a,V2A,Blues,Pop music,23,6.267029972752043,0
+audio_encoder_pair,E3a,V2A,Blues,Reggae,13,3.542234332425068,0
+audio_encoder_pair,E3a,V2A,Blues,Rock music,92,25.068119891008173,0
+audio_encoder_pair,E3a,V2A,Classical music,Blues,7,1.9125683060109289,0
+audio_encoder_pair,E3a,V2A,Classical music,Country,127,34.69945355191257,0
+audio_encoder_pair,E3a,V2A,Classical music,Electronic music,33,9.01639344262295,0
+audio_encoder_pair,E3a,V2A,Classical music,Funk,10,2.73224043715847,0
+audio_encoder_pair,E3a,V2A,Classical music,Hip hop music,1,0.273224043715847,0
+audio_encoder_pair,E3a,V2A,Classical music,Jazz,165,45.08196721311475,0
+audio_encoder_pair,E3a,V2A,Classical music,Pop music,12,3.278688524590164,0
+audio_encoder_pair,E3a,V2A,Classical music,Reggae,2,0.546448087431694,0
+audio_encoder_pair,E3a,V2A,Classical music,Rock music,9,2.459016393442623,0
+audio_encoder_pair,E3a,V2A,Country,Blues,153,41.689373297002724,0
+audio_encoder_pair,E3a,V2A,Country,Classical music,53,14.44141689373297,0
+audio_encoder_pair,E3a,V2A,Country,Electronic music,14,3.8147138964577656,0
+audio_encoder_pair,E3a,V2A,Country,Funk,16,4.359673024523161,0
+audio_encoder_pair,E3a,V2A,Country,Hip hop music,10,2.7247956403269753,0
+audio_encoder_pair,E3a,V2A,Country,Jazz,31,8.446866485013624,0
+audio_encoder_pair,E3a,V2A,Country,Pop music,38,10.354223433242506,0
+audio_encoder_pair,E3a,V2A,Country,Reggae,13,3.542234332425068,0
+audio_encoder_pair,E3a,V2A,Country,Rock music,39,10.626702997275205,0
+audio_encoder_pair,E3a,V2A,Electronic music,Blues,10,2.7247956403269753,0
+audio_encoder_pair,E3a,V2A,Electronic music,Classical music,11,2.997275204359673,0
+audio_encoder_pair,E3a,V2A,Electronic music,Country,1,0.2724795640326976,0
+audio_encoder_pair,E3a,V2A,Electronic music,Funk,101,27.52043596730245,1
+audio_encoder_pair,E3a,V2A,Electronic music,Hip hop music,123,33.514986376021795,1
+audio_encoder_pair,E3a,V2A,Electronic music,Jazz,0,0.0,0
+audio_encoder_pair,E3a,V2A,Electronic music,Pop music,48,13.079019073569482,1
+audio_encoder_pair,E3a,V2A,Electronic music,Reggae,13,3.542234332425068,1
+audio_encoder_pair,E3a,V2A,Electronic music,Rock music,60,16.348773841961854,0
+audio_encoder_pair,E3a,V2A,Funk,Blues,29,7.901907356948229,0
+audio_encoder_pair,E3a,V2A,Funk,Classical music,6,1.6348773841961852,0
+audio_encoder_pair,E3a,V2A,Funk,Country,12,3.2697547683923704,0
+audio_encoder_pair,E3a,V2A,Funk,Electronic music,70,19.07356948228883,1
+audio_encoder_pair,E3a,V2A,Funk,Hip hop music,65,17.71117166212534,1
+audio_encoder_pair,E3a,V2A,Funk,Jazz,16,4.359673024523161,0
+audio_encoder_pair,E3a,V2A,Funk,Pop music,56,15.258855585831062,1
+audio_encoder_pair,E3a,V2A,Funk,Reggae,72,19.618528610354222,1
+audio_encoder_pair,E3a,V2A,Funk,Rock music,41,11.1716621253406,0
+audio_encoder_pair,E3a,V2A,Hip hop music,Blues,1,0.2724795640326976,0
+audio_encoder_pair,E3a,V2A,Hip hop music,Classical music,1,0.2724795640326976,0
+audio_encoder_pair,E3a,V2A,Hip hop music,Country,2,0.5449591280653951,0
+audio_encoder_pair,E3a,V2A,Hip hop music,Electronic music,82,22.3433242506812,1
+audio_encoder_pair,E3a,V2A,Hip hop music,Funk,36,9.809264305177111,1
+audio_encoder_pair,E3a,V2A,Hip hop music,Jazz,0,0.0,0
+audio_encoder_pair,E3a,V2A,Hip hop music,Pop music,27,7.356948228882834,1
+audio_encoder_pair,E3a,V2A,Hip hop music,Reggae,206,56.130790190735695,1
+audio_encoder_pair,E3a,V2A,Hip hop music,Rock music,12,3.2697547683923704,0
+audio_encoder_pair,E3a,V2A,Jazz,Blues,71,19.346049046321525,0
+audio_encoder_pair,E3a,V2A,Jazz,Classical music,82,22.3433242506812,0
+audio_encoder_pair,E3a,V2A,Jazz,Country,52,14.168937329700272,0
+audio_encoder_pair,E3a,V2A,Jazz,Electronic music,28,7.629427792915531,0
+audio_encoder_pair,E3a,V2A,Jazz,Funk,23,6.267029972752043,0
+audio_encoder_pair,E3a,V2A,Jazz,Hip hop music,26,7.084468664850136,0
+audio_encoder_pair,E3a,V2A,Jazz,Pop music,28,7.629427792915531,0
+audio_encoder_pair,E3a,V2A,Jazz,Reggae,18,4.9046321525885554,0
+audio_encoder_pair,E3a,V2A,Jazz,Rock music,39,10.626702997275205,0
+audio_encoder_pair,E3a,V2A,Pop music,Blues,8,2.1798365122615806,0
+audio_encoder_pair,E3a,V2A,Pop music,Classical music,7,1.9073569482288828,0
+audio_encoder_pair,E3a,V2A,Pop music,Country,22,5.994550408719346,0
+audio_encoder_pair,E3a,V2A,Pop music,Electronic music,46,12.534059945504087,1
+audio_encoder_pair,E3a,V2A,Pop music,Funk,104,28.337874659400544,1
+audio_encoder_pair,E3a,V2A,Pop music,Hip hop music,73,19.891008174386922,1
+audio_encoder_pair,E3a,V2A,Pop music,Jazz,6,1.6348773841961852,0
+audio_encoder_pair,E3a,V2A,Pop music,Reggae,26,7.084468664850136,1
+audio_encoder_pair,E3a,V2A,Pop music,Rock music,75,20.435967302452315,0
+audio_encoder_pair,E3a,V2A,Reggae,Blues,13,3.551912568306011,0
+audio_encoder_pair,E3a,V2A,Reggae,Classical music,4,1.092896174863388,0
+audio_encoder_pair,E3a,V2A,Reggae,Country,6,1.639344262295082,0
+audio_encoder_pair,E3a,V2A,Reggae,Electronic music,45,12.295081967213115,1
+audio_encoder_pair,E3a,V2A,Reggae,Funk,108,29.508196721311474,1
+audio_encoder_pair,E3a,V2A,Reggae,Hip hop music,136,37.15846994535519,1
+audio_encoder_pair,E3a,V2A,Reggae,Jazz,10,2.73224043715847,0
+audio_encoder_pair,E3a,V2A,Reggae,Pop music,19,5.191256830601093,1
+audio_encoder_pair,E3a,V2A,Reggae,Rock music,25,6.830601092896175,0
+audio_encoder_pair,E3a,V2A,Rock music,Blues,133,36.23978201634878,0
+audio_encoder_pair,E3a,V2A,Rock music,Classical music,7,1.9073569482288828,0
+audio_encoder_pair,E3a,V2A,Rock music,Country,16,4.359673024523161,0
+audio_encoder_pair,E3a,V2A,Rock music,Electronic music,74,20.16348773841962,0
+audio_encoder_pair,E3a,V2A,Rock music,Funk,44,11.989100817438691,0
+audio_encoder_pair,E3a,V2A,Rock music,Hip hop music,9,2.4523160762942777,0
+audio_encoder_pair,E3a,V2A,Rock music,Jazz,15,4.087193460490464,0
+audio_encoder_pair,E3a,V2A,Rock music,Pop music,62,16.893732970027248,0
+audio_encoder_pair,E3a,V2A,Rock music,Reggae,7,1.9073569482288828,0
+audio_encoder_genre,E3b,V2A,Blues,Classical music,25,6.8119891008174385,0
+audio_encoder_genre,E3b,V2A,Blues,Country,126,34.33242506811989,0
+audio_encoder_genre,E3b,V2A,Blues,Electronic music,29,7.901907356948229,0
+audio_encoder_genre,E3b,V2A,Blues,Funk,4,1.0899182561307903,0
+audio_encoder_genre,E3b,V2A,Blues,Hip hop music,24,6.539509536784741,0
+audio_encoder_genre,E3b,V2A,Blues,Jazz,51,13.896457765667575,0
+audio_encoder_genre,E3b,V2A,Blues,Pop music,13,3.542234332425068,0
+audio_encoder_genre,E3b,V2A,Blues,Reggae,19,5.177111716621253,0
+audio_encoder_genre,E3b,V2A,Blues,Rock music,76,20.708446866485012,0
+audio_encoder_genre,E3b,V2A,Classical music,Blues,0,0.0,0
+audio_encoder_genre,E3b,V2A,Classical music,Country,127,34.69945355191257,0
+audio_encoder_genre,E3b,V2A,Classical music,Electronic music,16,4.371584699453552,0
+audio_encoder_genre,E3b,V2A,Classical music,Funk,0,0.0,0
+audio_encoder_genre,E3b,V2A,Classical music,Hip hop music,2,0.546448087431694,0
+audio_encoder_genre,E3b,V2A,Classical music,Jazz,213,58.19672131147541,0
+audio_encoder_genre,E3b,V2A,Classical music,Pop music,0,0.0,0
+audio_encoder_genre,E3b,V2A,Classical music,Reggae,5,1.366120218579235,0
+audio_encoder_genre,E3b,V2A,Classical music,Rock music,3,0.819672131147541,0
+audio_encoder_genre,E3b,V2A,Country,Blues,219,59.67302452316076,0
+audio_encoder_genre,E3b,V2A,Country,Classical music,41,11.1716621253406,0
+audio_encoder_genre,E3b,V2A,Country,Electronic music,20,5.449591280653951,0
+audio_encoder_genre,E3b,V2A,Country,Funk,2,0.5449591280653951,0
+audio_encoder_genre,E3b,V2A,Country,Hip hop music,3,0.8174386920980926,0
+audio_encoder_genre,E3b,V2A,Country,Jazz,19,5.177111716621253,0
+audio_encoder_genre,E3b,V2A,Country,Pop music,15,4.087193460490464,0
+audio_encoder_genre,E3b,V2A,Country,Reggae,12,3.2697547683923704,0
+audio_encoder_genre,E3b,V2A,Country,Rock music,36,9.809264305177111,0
+audio_encoder_genre,E3b,V2A,Electronic music,Blues,0,0.0,0
+audio_encoder_genre,E3b,V2A,Electronic music,Classical music,9,2.4523160762942777,0
+audio_encoder_genre,E3b,V2A,Electronic music,Country,7,1.9073569482288828,0
+audio_encoder_genre,E3b,V2A,Electronic music,Funk,10,2.7247956403269753,1
+audio_encoder_genre,E3b,V2A,Electronic music,Hip hop music,223,60.762942779291556,1
+audio_encoder_genre,E3b,V2A,Electronic music,Jazz,10,2.7247956403269753,0
+audio_encoder_genre,E3b,V2A,Electronic music,Pop music,42,11.444141689373296,1
+audio_encoder_genre,E3b,V2A,Electronic music,Reggae,24,6.539509536784741,1
+audio_encoder_genre,E3b,V2A,Electronic music,Rock music,42,11.444141689373296,0
+audio_encoder_genre,E3b,V2A,Funk,Blues,4,1.0899182561307903,0
+audio_encoder_genre,E3b,V2A,Funk,Classical music,12,3.2697547683923704,0
+audio_encoder_genre,E3b,V2A,Funk,Country,24,6.539509536784741,0
+audio_encoder_genre,E3b,V2A,Funk,Electronic music,100,27.247956403269754,1
+audio_encoder_genre,E3b,V2A,Funk,Hip hop music,58,15.803814713896458,1
+audio_encoder_genre,E3b,V2A,Funk,Jazz,28,7.629427792915531,0
+audio_encoder_genre,E3b,V2A,Funk,Pop music,23,6.267029972752043,1
+audio_encoder_genre,E3b,V2A,Funk,Reggae,70,19.07356948228883,1
+audio_encoder_genre,E3b,V2A,Funk,Rock music,48,13.079019073569482,0
+audio_encoder_genre,E3b,V2A,Hip hop music,Blues,0,0.0,0
+audio_encoder_genre,E3b,V2A,Hip hop music,Classical music,1,0.2724795640326976,0
+audio_encoder_genre,E3b,V2A,Hip hop music,Country,2,0.5449591280653951,0
+audio_encoder_genre,E3b,V2A,Hip hop music,Electronic music,151,41.14441416893733,1
+audio_encoder_genre,E3b,V2A,Hip hop music,Funk,5,1.3623978201634876,1
+audio_encoder_genre,E3b,V2A,Hip hop music,Jazz,6,1.6348773841961852,0
+audio_encoder_genre,E3b,V2A,Hip hop music,Pop music,14,3.8147138964577656,1
+audio_encoder_genre,E3b,V2A,Hip hop music,Reggae,180,49.04632152588556,1
+audio_encoder_genre,E3b,V2A,Hip hop music,Rock music,8,2.1798365122615806,0
+audio_encoder_genre,E3b,V2A,Jazz,Blues,92,25.068119891008173,0
+audio_encoder_genre,E3b,V2A,Jazz,Classical music,74,20.16348773841962,0
+audio_encoder_genre,E3b,V2A,Jazz,Country,62,16.893732970027248,0
+audio_encoder_genre,E3b,V2A,Jazz,Electronic music,46,12.534059945504087,0
+audio_encoder_genre,E3b,V2A,Jazz,Funk,8,2.1798365122615806,0
+audio_encoder_genre,E3b,V2A,Jazz,Hip hop music,22,5.994550408719346,0
+audio_encoder_genre,E3b,V2A,Jazz,Pop music,17,4.632152588555858,0
+audio_encoder_genre,E3b,V2A,Jazz,Reggae,15,4.087193460490464,0
+audio_encoder_genre,E3b,V2A,Jazz,Rock music,31,8.446866485013624,0
+audio_encoder_genre,E3b,V2A,Pop music,Blues,3,0.8174386920980926,0
+audio_encoder_genre,E3b,V2A,Pop music,Classical music,10,2.7247956403269753,0
+audio_encoder_genre,E3b,V2A,Pop music,Country,23,6.267029972752043,0
+audio_encoder_genre,E3b,V2A,Pop music,Electronic music,89,24.250681198910083,1
+audio_encoder_genre,E3b,V2A,Pop music,Funk,72,19.618528610354222,1
+audio_encoder_genre,E3b,V2A,Pop music,Hip hop music,72,19.618528610354222,1
+audio_encoder_genre,E3b,V2A,Pop music,Jazz,14,3.8147138964577656,0
+audio_encoder_genre,E3b,V2A,Pop music,Reggae,21,5.722070844686648,1
+audio_encoder_genre,E3b,V2A,Pop music,Rock music,63,17.166212534059945,0
+audio_encoder_genre,E3b,V2A,Reggae,Blues,0,0.0,0
+audio_encoder_genre,E3b,V2A,Reggae,Classical music,6,1.639344262295082,0
+audio_encoder_genre,E3b,V2A,Reggae,Country,11,3.0054644808743167,0
+audio_encoder_genre,E3b,V2A,Reggae,Electronic music,58,15.846994535519126,1
+audio_encoder_genre,E3b,V2A,Reggae,Funk,107,29.23497267759563,1
+audio_encoder_genre,E3b,V2A,Reggae,Hip hop music,137,37.431693989071036,1
+audio_encoder_genre,E3b,V2A,Reggae,Jazz,12,3.278688524590164,0
+audio_encoder_genre,E3b,V2A,Reggae,Pop music,13,3.551912568306011,1
+audio_encoder_genre,E3b,V2A,Reggae,Rock music,22,6.0109289617486334,0
+audio_encoder_genre,E3b,V2A,Rock music,Blues,113,30.79019073569482,0
+audio_encoder_genre,E3b,V2A,Rock music,Classical music,3,0.8174386920980926,0
+audio_encoder_genre,E3b,V2A,Rock music,Country,51,13.896457765667575,0
+audio_encoder_genre,E3b,V2A,Rock music,Electronic music,76,20.708446866485012,0
+audio_encoder_genre,E3b,V2A,Rock music,Funk,5,1.3623978201634876,0
+audio_encoder_genre,E3b,V2A,Rock music,Hip hop music,6,1.6348773841961852,0
+audio_encoder_genre,E3b,V2A,Rock music,Jazz,28,7.629427792915531,0
+audio_encoder_genre,E3b,V2A,Rock music,Pop music,65,17.71117166212534,0
+audio_encoder_genre,E3b,V2A,Rock music,Reggae,20,5.449591280653951,0
+pair,E1,A2V,Blues,Classical music,19,5.177111716621253,0
+pair,E1,A2V,Blues,Country,93,25.340599455040874,0
+pair,E1,A2V,Blues,Electronic music,19,5.177111716621253,0
+pair,E1,A2V,Blues,Funk,40,10.899182561307901,0
+pair,E1,A2V,Blues,Hip hop music,9,2.4523160762942777,0
+pair,E1,A2V,Blues,Jazz,73,19.891008174386922,0
+pair,E1,A2V,Blues,Pop music,23,6.267029972752043,0
+pair,E1,A2V,Blues,Reggae,26,7.084468664850136,0
+pair,E1,A2V,Blues,Rock music,65,17.71117166212534,0
+pair,E1,A2V,Classical music,Blues,18,4.918032786885246,0
+pair,E1,A2V,Classical music,Country,107,29.23497267759563,0
+pair,E1,A2V,Classical music,Electronic music,37,10.109289617486338,0
+pair,E1,A2V,Classical music,Funk,3,0.819672131147541,0
+pair,E1,A2V,Classical music,Hip hop music,0,0.0,0
+pair,E1,A2V,Classical music,Jazz,179,48.90710382513661,0
+pair,E1,A2V,Classical music,Pop music,14,3.8251366120218577,0
+pair,E1,A2V,Classical music,Reggae,3,0.819672131147541,0
+pair,E1,A2V,Classical music,Rock music,5,1.366120218579235,0
+pair,E1,A2V,Country,Blues,137,37.32970027247956,0
+pair,E1,A2V,Country,Classical music,55,14.986376021798366,0
+pair,E1,A2V,Country,Electronic music,12,3.2697547683923704,0
+pair,E1,A2V,Country,Funk,9,2.4523160762942777,0
+pair,E1,A2V,Country,Hip hop music,8,2.1798365122615806,0
+pair,E1,A2V,Country,Jazz,46,12.534059945504087,0
+pair,E1,A2V,Country,Pop music,30,8.174386920980927,0
+pair,E1,A2V,Country,Reggae,27,7.356948228882834,0
+pair,E1,A2V,Country,Rock music,43,11.716621253405995,0
+pair,E1,A2V,Electronic music,Blues,4,1.0899182561307903,0
+pair,E1,A2V,Electronic music,Classical music,17,4.632152588555858,0
+pair,E1,A2V,Electronic music,Country,10,2.7247956403269753,0
+pair,E1,A2V,Electronic music,Funk,151,41.14441416893733,1
+pair,E1,A2V,Electronic music,Hip hop music,52,14.168937329700272,1
+pair,E1,A2V,Electronic music,Jazz,15,4.087193460490464,0
+pair,E1,A2V,Electronic music,Pop music,34,9.264305177111716,1
+pair,E1,A2V,Electronic music,Reggae,33,8.991825613079019,1
+pair,E1,A2V,Electronic music,Rock music,51,13.896457765667575,0
+pair,E1,A2V,Funk,Blues,15,4.087193460490464,0
+pair,E1,A2V,Funk,Classical music,3,0.8174386920980926,0
+pair,E1,A2V,Funk,Country,14,3.8147138964577656,0
+pair,E1,A2V,Funk,Electronic music,85,23.160762942779293,1
+pair,E1,A2V,Funk,Hip hop music,46,12.534059945504087,1
+pair,E1,A2V,Funk,Jazz,22,5.994550408719346,0
+pair,E1,A2V,Funk,Pop music,35,9.536784741144414,1
+pair,E1,A2V,Funk,Reggae,114,31.06267029972752,1
+pair,E1,A2V,Funk,Rock music,33,8.991825613079019,0
+pair,E1,A2V,Hip hop music,Blues,2,0.5449591280653951,0
+pair,E1,A2V,Hip hop music,Classical music,2,0.5449591280653951,0
+pair,E1,A2V,Hip hop music,Country,4,1.0899182561307903,0
+pair,E1,A2V,Hip hop music,Electronic music,69,18.80108991825613,1
+pair,E1,A2V,Hip hop music,Funk,69,18.80108991825613,1
+pair,E1,A2V,Hip hop music,Jazz,5,1.3623978201634876,0
+pair,E1,A2V,Hip hop music,Pop music,29,7.901907356948229,1
+pair,E1,A2V,Hip hop music,Reggae,168,45.776566757493185,1
+pair,E1,A2V,Hip hop music,Rock music,19,5.177111716621253,0
+pair,E1,A2V,Jazz,Blues,68,18.52861035422343,0
+pair,E1,A2V,Jazz,Classical music,78,21.25340599455041,0
+pair,E1,A2V,Jazz,Country,61,16.62125340599455,0
+pair,E1,A2V,Jazz,Electronic music,32,8.719346049046322,0
+pair,E1,A2V,Jazz,Funk,31,8.446866485013624,0
+pair,E1,A2V,Jazz,Hip hop music,14,3.8147138964577656,0
+pair,E1,A2V,Jazz,Pop music,15,4.087193460490464,0
+pair,E1,A2V,Jazz,Reggae,32,8.719346049046322,0
+pair,E1,A2V,Jazz,Rock music,36,9.809264305177111,0
+pair,E1,A2V,Pop music,Blues,5,1.3623978201634876,0
+pair,E1,A2V,Pop music,Classical music,9,2.4523160762942777,0
+pair,E1,A2V,Pop music,Country,28,7.629427792915531,0
+pair,E1,A2V,Pop music,Electronic music,58,15.803814713896458,1
+pair,E1,A2V,Pop music,Funk,79,21.525885558583106,1
+pair,E1,A2V,Pop music,Hip hop music,53,14.44141689373297,1
+pair,E1,A2V,Pop music,Jazz,17,4.632152588555858,0
+pair,E1,A2V,Pop music,Reggae,51,13.896457765667575,1
+pair,E1,A2V,Pop music,Rock music,67,18.256130790190735,0
+pair,E1,A2V,Reggae,Blues,6,1.639344262295082,0
+pair,E1,A2V,Reggae,Classical music,2,0.546448087431694,0
+pair,E1,A2V,Reggae,Country,11,3.0054644808743167,0
+pair,E1,A2V,Reggae,Electronic music,37,10.109289617486338,1
+pair,E1,A2V,Reggae,Funk,135,36.885245901639344,1
+pair,E1,A2V,Reggae,Hip hop music,127,34.69945355191257,1
+pair,E1,A2V,Reggae,Jazz,16,4.371584699453552,0
+pair,E1,A2V,Reggae,Pop music,22,6.0109289617486334,1
+pair,E1,A2V,Reggae,Rock music,10,2.73224043715847,0
+pair,E1,A2V,Rock music,Blues,85,23.160762942779293,0
+pair,E1,A2V,Rock music,Classical music,8,2.1798365122615806,0
+pair,E1,A2V,Rock music,Country,32,8.719346049046322,0
+pair,E1,A2V,Rock music,Electronic music,66,17.983651226158038,0
+pair,E1,A2V,Rock music,Funk,57,15.53133514986376,0
+pair,E1,A2V,Rock music,Hip hop music,6,1.6348773841961852,0
+pair,E1,A2V,Rock music,Jazz,33,8.991825613079019,0
+pair,E1,A2V,Rock music,Pop music,69,18.80108991825613,0
+pair,E1,A2V,Rock music,Reggae,11,2.997275204359673,0
+genre,E2,A2V,Blues,Classical music,36,9.809264305177111,0
+genre,E2,A2V,Blues,Country,108,29.427792915531334,0
+genre,E2,A2V,Blues,Electronic music,34,9.264305177111716,0
+genre,E2,A2V,Blues,Funk,3,0.8174386920980926,0
+genre,E2,A2V,Blues,Hip hop music,15,4.087193460490464,0
+genre,E2,A2V,Blues,Jazz,37,10.08174386920981,0
+genre,E2,A2V,Blues,Pop music,12,3.2697547683923704,0
+genre,E2,A2V,Blues,Reggae,47,12.806539509536785,0
+genre,E2,A2V,Blues,Rock music,75,20.435967302452315,0
+genre,E2,A2V,Classical music,Blues,2,0.546448087431694,0
+genre,E2,A2V,Classical music,Country,73,19.94535519125683,0
+genre,E2,A2V,Classical music,Electronic music,26,7.103825136612022,0
+genre,E2,A2V,Classical music,Funk,0,0.0,0
+genre,E2,A2V,Classical music,Hip hop music,0,0.0,0
+genre,E2,A2V,Classical music,Jazz,254,69.39890710382514,0
+genre,E2,A2V,Classical music,Pop music,1,0.273224043715847,0
+genre,E2,A2V,Classical music,Reggae,5,1.366120218579235,0
+genre,E2,A2V,Classical music,Rock music,5,1.366120218579235,0
+genre,E2,A2V,Country,Blues,136,37.05722070844686,0
+genre,E2,A2V,Country,Classical music,69,18.80108991825613,0
+genre,E2,A2V,Country,Electronic music,21,5.722070844686648,0
+genre,E2,A2V,Country,Funk,1,0.2724795640326976,0
+genre,E2,A2V,Country,Hip hop music,4,1.0899182561307903,0
+genre,E2,A2V,Country,Jazz,36,9.809264305177111,0
+genre,E2,A2V,Country,Pop music,22,5.994550408719346,0
+genre,E2,A2V,Country,Reggae,28,7.629427792915531,0
+genre,E2,A2V,Country,Rock music,50,13.623978201634877,0
+genre,E2,A2V,Electronic music,Blues,0,0.0,0
+genre,E2,A2V,Electronic music,Classical music,24,6.539509536784741,0
+genre,E2,A2V,Electronic music,Country,16,4.359673024523161,0
+genre,E2,A2V,Electronic music,Funk,37,10.08174386920981,1
+genre,E2,A2V,Electronic music,Hip hop music,171,46.59400544959128,1
+genre,E2,A2V,Electronic music,Jazz,13,3.542234332425068,0
+genre,E2,A2V,Electronic music,Pop music,16,4.359673024523161,1
+genre,E2,A2V,Electronic music,Reggae,52,14.168937329700272,1
+genre,E2,A2V,Electronic music,Rock music,38,10.354223433242506,0
+genre,E2,A2V,Funk,Blues,2,0.5449591280653951,0
+genre,E2,A2V,Funk,Classical music,6,1.6348773841961852,0
+genre,E2,A2V,Funk,Country,20,5.449591280653951,0
+genre,E2,A2V,Funk,Electronic music,73,19.891008174386922,1
+genre,E2,A2V,Funk,Hip hop music,71,19.346049046321525,1
+genre,E2,A2V,Funk,Jazz,18,4.9046321525885554,0
+genre,E2,A2V,Funk,Pop music,19,5.177111716621253,1
+genre,E2,A2V,Funk,Reggae,119,32.42506811989101,1
+genre,E2,A2V,Funk,Rock music,39,10.626702997275205,0
+genre,E2,A2V,Hip hop music,Blues,0,0.0,0
+genre,E2,A2V,Hip hop music,Classical music,3,0.8174386920980926,0
+genre,E2,A2V,Hip hop music,Country,6,1.6348773841961852,0
+genre,E2,A2V,Hip hop music,Electronic music,90,24.52316076294278,1
+genre,E2,A2V,Hip hop music,Funk,1,0.2724795640326976,1
+genre,E2,A2V,Hip hop music,Jazz,8,2.1798365122615806,0
+genre,E2,A2V,Hip hop music,Pop music,8,2.1798365122615806,1
+genre,E2,A2V,Hip hop music,Reggae,241,65.66757493188011,1
+genre,E2,A2V,Hip hop music,Rock music,10,2.7247956403269753,0
+genre,E2,A2V,Jazz,Blues,52,14.168937329700272,0
+genre,E2,A2V,Jazz,Classical music,88,23.978201634877383,0
+genre,E2,A2V,Jazz,Country,73,19.891008174386922,0
+genre,E2,A2V,Jazz,Electronic music,47,12.806539509536785,0
+genre,E2,A2V,Jazz,Funk,3,0.8174386920980926,0
+genre,E2,A2V,Jazz,Hip hop music,19,5.177111716621253,0
+genre,E2,A2V,Jazz,Pop music,5,1.3623978201634876,0
+genre,E2,A2V,Jazz,Reggae,40,10.899182561307901,0
+genre,E2,A2V,Jazz,Rock music,40,10.899182561307901,0
+genre,E2,A2V,Pop music,Blues,1,0.2724795640326976,0
+genre,E2,A2V,Pop music,Classical music,12,3.2697547683923704,0
+genre,E2,A2V,Pop music,Country,39,10.626702997275205,0
+genre,E2,A2V,Pop music,Electronic music,80,21.798365122615802,1
+genre,E2,A2V,Pop music,Funk,15,4.087193460490464,1
+genre,E2,A2V,Pop music,Hip hop music,63,17.166212534059945,1
+genre,E2,A2V,Pop music,Jazz,8,2.1798365122615806,0
+genre,E2,A2V,Pop music,Reggae,92,25.068119891008173,1
+genre,E2,A2V,Pop music,Rock music,57,15.53133514986376,0
+genre,E2,A2V,Reggae,Blues,3,0.819672131147541,0
+genre,E2,A2V,Reggae,Classical music,5,1.366120218579235,0
+genre,E2,A2V,Reggae,Country,21,5.737704918032787,0
+genre,E2,A2V,Reggae,Electronic music,36,9.836065573770492,1
+genre,E2,A2V,Reggae,Funk,29,7.923497267759563,1
+genre,E2,A2V,Reggae,Hip hop music,235,64.20765027322405,1
+genre,E2,A2V,Reggae,Jazz,15,4.098360655737705,0
+genre,E2,A2V,Reggae,Pop music,14,3.8251366120218577,1
+genre,E2,A2V,Reggae,Rock music,8,2.185792349726776,0
+genre,E2,A2V,Rock music,Blues,148,40.32697547683924,0
+genre,E2,A2V,Rock music,Classical music,12,3.2697547683923704,0
+genre,E2,A2V,Rock music,Country,35,9.536784741144414,0
+genre,E2,A2V,Rock music,Electronic music,80,21.798365122615802,0
+genre,E2,A2V,Rock music,Funk,7,1.9073569482288828,0
+genre,E2,A2V,Rock music,Hip hop music,12,3.2697547683923704,0
+genre,E2,A2V,Rock music,Jazz,16,4.359673024523161,0
+genre,E2,A2V,Rock music,Pop music,30,8.174386920980927,0
+genre,E2,A2V,Rock music,Reggae,27,7.356948228882834,0
+audio_encoder_pair,E3a,A2V,Blues,Classical music,20,5.449591280653951,0
+audio_encoder_pair,E3a,A2V,Blues,Country,101,27.52043596730245,0
+audio_encoder_pair,E3a,A2V,Blues,Electronic music,22,5.994550408719346,0
+audio_encoder_pair,E3a,A2V,Blues,Funk,28,7.629427792915531,0
+audio_encoder_pair,E3a,A2V,Blues,Hip hop music,13,3.542234332425068,0
+audio_encoder_pair,E3a,A2V,Blues,Jazz,83,22.615803814713896,0
+audio_encoder_pair,E3a,A2V,Blues,Pop music,25,6.8119891008174385,0
+audio_encoder_pair,E3a,A2V,Blues,Reggae,16,4.359673024523161,0
+audio_encoder_pair,E3a,A2V,Blues,Rock music,59,16.076294277929154,0
+audio_encoder_pair,E3a,A2V,Classical music,Blues,7,1.9125683060109289,0
+audio_encoder_pair,E3a,A2V,Classical music,Country,111,30.327868852459016,0
+audio_encoder_pair,E3a,A2V,Classical music,Electronic music,40,10.92896174863388,0
+audio_encoder_pair,E3a,A2V,Classical music,Funk,0,0.0,0
+audio_encoder_pair,E3a,A2V,Classical music,Hip hop music,1,0.273224043715847,0
+audio_encoder_pair,E3a,A2V,Classical music,Jazz,184,50.27322404371585,0
+audio_encoder_pair,E3a,A2V,Classical music,Pop music,10,2.73224043715847,0
+audio_encoder_pair,E3a,A2V,Classical music,Reggae,5,1.366120218579235,0
+audio_encoder_pair,E3a,A2V,Classical music,Rock music,8,2.185792349726776,0
+audio_encoder_pair,E3a,A2V,Country,Blues,162,44.141689373297005,0
+audio_encoder_pair,E3a,A2V,Country,Classical music,52,14.168937329700272,0
+audio_encoder_pair,E3a,A2V,Country,Electronic music,9,2.4523160762942777,0
+audio_encoder_pair,E3a,A2V,Country,Funk,10,2.7247956403269753,0
+audio_encoder_pair,E3a,A2V,Country,Hip hop music,5,1.3623978201634876,0
+audio_encoder_pair,E3a,A2V,Country,Jazz,43,11.716621253405995,0
+audio_encoder_pair,E3a,A2V,Country,Pop music,34,9.264305177111716,0
+audio_encoder_pair,E3a,A2V,Country,Reggae,16,4.359673024523161,0
+audio_encoder_pair,E3a,A2V,Country,Rock music,36,9.809264305177111,0
+audio_encoder_pair,E3a,A2V,Electronic music,Blues,5,1.3623978201634876,0
+audio_encoder_pair,E3a,A2V,Electronic music,Classical music,9,2.4523160762942777,0
+audio_encoder_pair,E3a,A2V,Electronic music,Country,4,1.0899182561307903,0
+audio_encoder_pair,E3a,A2V,Electronic music,Funk,153,41.689373297002724,1
+audio_encoder_pair,E3a,A2V,Electronic music,Hip hop music,83,22.615803814713896,1
+audio_encoder_pair,E3a,A2V,Electronic music,Jazz,21,5.722070844686648,0
+audio_encoder_pair,E3a,A2V,Electronic music,Pop music,33,8.991825613079019,1
+audio_encoder_pair,E3a,A2V,Electronic music,Reggae,8,2.1798365122615806,1
+audio_encoder_pair,E3a,A2V,Electronic music,Rock music,51,13.896457765667575,0
+audio_encoder_pair,E3a,A2V,Funk,Blues,23,6.267029972752043,0
+audio_encoder_pair,E3a,A2V,Funk,Classical music,1,0.2724795640326976,0
+audio_encoder_pair,E3a,A2V,Funk,Country,22,5.994550408719346,0
+audio_encoder_pair,E3a,A2V,Funk,Electronic music,83,22.615803814713896,1
+audio_encoder_pair,E3a,A2V,Funk,Hip hop music,43,11.716621253405995,1
+audio_encoder_pair,E3a,A2V,Funk,Jazz,35,9.536784741144414,0
+audio_encoder_pair,E3a,A2V,Funk,Pop music,51,13.896457765667575,1
+audio_encoder_pair,E3a,A2V,Funk,Reggae,81,22.070844686648503,1
+audio_encoder_pair,E3a,A2V,Funk,Rock music,28,7.629427792915531,0
+audio_encoder_pair,E3a,A2V,Hip hop music,Blues,3,0.8174386920980926,0
+audio_encoder_pair,E3a,A2V,Hip hop music,Classical music,1,0.2724795640326976,0
+audio_encoder_pair,E3a,A2V,Hip hop music,Country,5,1.3623978201634876,0
+audio_encoder_pair,E3a,A2V,Hip hop music,Electronic music,95,25.885558583106267,1
+audio_encoder_pair,E3a,A2V,Hip hop music,Funk,55,14.986376021798366,1
+audio_encoder_pair,E3a,A2V,Hip hop music,Jazz,14,3.8147138964577656,0
+audio_encoder_pair,E3a,A2V,Hip hop music,Pop music,35,9.536784741144414,1
+audio_encoder_pair,E3a,A2V,Hip hop music,Reggae,145,39.509536784741144,1
+audio_encoder_pair,E3a,A2V,Hip hop music,Rock music,14,3.8147138964577656,0
+audio_encoder_pair,E3a,A2V,Jazz,Blues,83,22.615803814713896,0
+audio_encoder_pair,E3a,A2V,Jazz,Classical music,80,21.798365122615802,0
+audio_encoder_pair,E3a,A2V,Jazz,Country,54,14.713896457765667,0
+audio_encoder_pair,E3a,A2V,Jazz,Electronic music,31,8.446866485013624,0
+audio_encoder_pair,E3a,A2V,Jazz,Funk,28,7.629427792915531,0
+audio_encoder_pair,E3a,A2V,Jazz,Hip hop music,12,3.2697547683923704,0
+audio_encoder_pair,E3a,A2V,Jazz,Pop music,28,7.629427792915531,0
+audio_encoder_pair,E3a,A2V,Jazz,Reggae,17,4.632152588555858,0
+audio_encoder_pair,E3a,A2V,Jazz,Rock music,34,9.264305177111716,0
+audio_encoder_pair,E3a,A2V,Pop music,Blues,12,3.2697547683923704,0
+audio_encoder_pair,E3a,A2V,Pop music,Classical music,4,1.0899182561307903,0
+audio_encoder_pair,E3a,A2V,Pop music,Country,35,9.536784741144414,0
+audio_encoder_pair,E3a,A2V,Pop music,Electronic music,61,16.62125340599455,1
+audio_encoder_pair,E3a,A2V,Pop music,Funk,72,19.618528610354222,1
+audio_encoder_pair,E3a,A2V,Pop music,Hip hop music,49,13.35149863760218,1
+audio_encoder_pair,E3a,A2V,Pop music,Jazz,33,8.991825613079019,0
+audio_encoder_pair,E3a,A2V,Pop music,Reggae,38,10.354223433242506,1
+audio_encoder_pair,E3a,A2V,Pop music,Rock music,63,17.166212534059945,0
+audio_encoder_pair,E3a,A2V,Reggae,Blues,7,1.9125683060109289,0
+audio_encoder_pair,E3a,A2V,Reggae,Classical music,1,0.273224043715847,0
+audio_encoder_pair,E3a,A2V,Reggae,Country,19,5.191256830601093,0
+audio_encoder_pair,E3a,A2V,Reggae,Electronic music,38,10.382513661202186,1
+audio_encoder_pair,E3a,A2V,Reggae,Funk,118,32.240437158469945,1
+audio_encoder_pair,E3a,A2V,Reggae,Hip hop music,124,33.87978142076503,1
+audio_encoder_pair,E3a,A2V,Reggae,Jazz,28,7.6502732240437155,0
+audio_encoder_pair,E3a,A2V,Reggae,Pop music,24,6.557377049180328,1
+audio_encoder_pair,E3a,A2V,Reggae,Rock music,7,1.9125683060109289,0
+audio_encoder_pair,E3a,A2V,Rock music,Blues,109,29.70027247956403,0
+audio_encoder_pair,E3a,A2V,Rock music,Classical music,5,1.3623978201634876,0
+audio_encoder_pair,E3a,A2V,Rock music,Country,27,7.356948228882834,0
+audio_encoder_pair,E3a,A2V,Rock music,Electronic music,85,23.160762942779293,0
+audio_encoder_pair,E3a,A2V,Rock music,Funk,35,9.536784741144414,0
+audio_encoder_pair,E3a,A2V,Rock music,Hip hop music,7,1.9073569482288828,0
+audio_encoder_pair,E3a,A2V,Rock music,Jazz,35,9.536784741144414,0
+audio_encoder_pair,E3a,A2V,Rock music,Pop music,62,16.893732970027248,0
+audio_encoder_pair,E3a,A2V,Rock music,Reggae,2,0.5449591280653951,0
+audio_encoder_genre,E3b,A2V,Blues,Classical music,31,8.446866485013624,0
+audio_encoder_genre,E3b,A2V,Blues,Country,136,37.05722070844686,0
+audio_encoder_genre,E3b,A2V,Blues,Electronic music,19,5.177111716621253,0
+audio_encoder_genre,E3b,A2V,Blues,Funk,2,0.5449591280653951,0
+audio_encoder_genre,E3b,A2V,Blues,Hip hop music,17,4.632152588555858,0
+audio_encoder_genre,E3b,A2V,Blues,Jazz,68,18.52861035422343,0
+audio_encoder_genre,E3b,A2V,Blues,Pop music,7,1.9073569482288828,0
+audio_encoder_genre,E3b,A2V,Blues,Reggae,39,10.626702997275205,0
+audio_encoder_genre,E3b,A2V,Blues,Rock music,48,13.079019073569482,0
+audio_encoder_genre,E3b,A2V,Classical music,Blues,0,0.0,0
+audio_encoder_genre,E3b,A2V,Classical music,Country,51,13.934426229508198,0
+audio_encoder_genre,E3b,A2V,Classical music,Electronic music,11,3.0054644808743167,0
+audio_encoder_genre,E3b,A2V,Classical music,Funk,0,0.0,0
+audio_encoder_genre,E3b,A2V,Classical music,Hip hop music,1,0.273224043715847,0
+audio_encoder_genre,E3b,A2V,Classical music,Jazz,294,80.32786885245902,0
+audio_encoder_genre,E3b,A2V,Classical music,Pop music,1,0.273224043715847,0
+audio_encoder_genre,E3b,A2V,Classical music,Reggae,3,0.819672131147541,0
+audio_encoder_genre,E3b,A2V,Classical music,Rock music,5,1.366120218579235,0
+audio_encoder_genre,E3b,A2V,Country,Blues,228,62.12534059945504,0
+audio_encoder_genre,E3b,A2V,Country,Classical music,56,15.258855585831062,0
+audio_encoder_genre,E3b,A2V,Country,Electronic music,7,1.9073569482288828,0
+audio_encoder_genre,E3b,A2V,Country,Funk,0,0.0,0
+audio_encoder_genre,E3b,A2V,Country,Hip hop music,4,1.0899182561307903,0
+audio_encoder_genre,E3b,A2V,Country,Jazz,19,5.177111716621253,0
+audio_encoder_genre,E3b,A2V,Country,Pop music,11,2.997275204359673,0
+audio_encoder_genre,E3b,A2V,Country,Reggae,18,4.9046321525885554,0
+audio_encoder_genre,E3b,A2V,Country,Rock music,24,6.539509536784741,0
+audio_encoder_genre,E3b,A2V,Electronic music,Blues,3,0.8174386920980926,0
+audio_encoder_genre,E3b,A2V,Electronic music,Classical music,7,1.9073569482288828,0
+audio_encoder_genre,E3b,A2V,Electronic music,Country,17,4.632152588555858,0
+audio_encoder_genre,E3b,A2V,Electronic music,Funk,60,16.348773841961854,1
+audio_encoder_genre,E3b,A2V,Electronic music,Hip hop music,188,51.22615803814714,1
+audio_encoder_genre,E3b,A2V,Electronic music,Jazz,12,3.2697547683923704,0
+audio_encoder_genre,E3b,A2V,Electronic music,Pop music,20,5.449591280653951,1
+audio_encoder_genre,E3b,A2V,Electronic music,Reggae,24,6.539509536784741,1
+audio_encoder_genre,E3b,A2V,Electronic music,Rock music,36,9.809264305177111,0
+audio_encoder_genre,E3b,A2V,Funk,Blues,1,0.2724795640326976,0
+audio_encoder_genre,E3b,A2V,Funk,Classical music,2,0.5449591280653951,0
+audio_encoder_genre,E3b,A2V,Funk,Country,39,10.626702997275205,0
+audio_encoder_genre,E3b,A2V,Funk,Electronic music,27,7.356948228882834,1
+audio_encoder_genre,E3b,A2V,Funk,Hip hop music,72,19.618528610354222,1
+audio_encoder_genre,E3b,A2V,Funk,Jazz,34,9.264305177111716,0
+audio_encoder_genre,E3b,A2V,Funk,Pop music,31,8.446866485013624,1
+audio_encoder_genre,E3b,A2V,Funk,Reggae,133,36.23978201634878,1
+audio_encoder_genre,E3b,A2V,Funk,Rock music,28,7.629427792915531,0
+audio_encoder_genre,E3b,A2V,Hip hop music,Blues,0,0.0,0
+audio_encoder_genre,E3b,A2V,Hip hop music,Classical music,3,0.8174386920980926,0
+audio_encoder_genre,E3b,A2V,Hip hop music,Country,7,1.9073569482288828,0
+audio_encoder_genre,E3b,A2V,Hip hop music,Electronic music,85,23.160762942779293,1
+audio_encoder_genre,E3b,A2V,Hip hop music,Funk,5,1.3623978201634876,1
+audio_encoder_genre,E3b,A2V,Hip hop music,Jazz,0,0.0,0
+audio_encoder_genre,E3b,A2V,Hip hop music,Pop music,22,5.994550408719346,1
+audio_encoder_genre,E3b,A2V,Hip hop music,Reggae,231,62.94277929155314,1
+audio_encoder_genre,E3b,A2V,Hip hop music,Rock music,14,3.8147138964577656,0
+audio_encoder_genre,E3b,A2V,Jazz,Blues,90,24.52316076294278,0
+audio_encoder_genre,E3b,A2V,Jazz,Classical music,82,22.3433242506812,0
+audio_encoder_genre,E3b,A2V,Jazz,Country,77,20.980926430517712,0
+audio_encoder_genre,E3b,A2V,Jazz,Electronic music,17,4.632152588555858,0
+audio_encoder_genre,E3b,A2V,Jazz,Funk,2,0.5449591280653951,0
+audio_encoder_genre,E3b,A2V,Jazz,Hip hop music,19,5.177111716621253,0
+audio_encoder_genre,E3b,A2V,Jazz,Pop music,19,5.177111716621253,0
+audio_encoder_genre,E3b,A2V,Jazz,Reggae,38,10.354223433242506,0
+audio_encoder_genre,E3b,A2V,Jazz,Rock music,23,6.267029972752043,0
+audio_encoder_genre,E3b,A2V,Pop music,Blues,3,0.8174386920980926,0
+audio_encoder_genre,E3b,A2V,Pop music,Classical music,2,0.5449591280653951,0
+audio_encoder_genre,E3b,A2V,Pop music,Country,63,17.166212534059945,0
+audio_encoder_genre,E3b,A2V,Pop music,Electronic music,46,12.534059945504087,1
+audio_encoder_genre,E3b,A2V,Pop music,Funk,44,11.989100817438691,1
+audio_encoder_genre,E3b,A2V,Pop music,Hip hop music,67,18.256130790190735,1
+audio_encoder_genre,E3b,A2V,Pop music,Jazz,15,4.087193460490464,0
+audio_encoder_genre,E3b,A2V,Pop music,Reggae,72,19.618528610354222,1
+audio_encoder_genre,E3b,A2V,Pop music,Rock music,55,14.986376021798366,0
+audio_encoder_genre,E3b,A2V,Reggae,Blues,1,0.273224043715847,0
+audio_encoder_genre,E3b,A2V,Reggae,Classical music,1,0.273224043715847,0
+audio_encoder_genre,E3b,A2V,Reggae,Country,34,9.289617486338798,0
+audio_encoder_genre,E3b,A2V,Reggae,Electronic music,15,4.098360655737705,1
+audio_encoder_genre,E3b,A2V,Reggae,Funk,51,13.934426229508198,1
+audio_encoder_genre,E3b,A2V,Reggae,Hip hop music,229,62.568306010928964,1
+audio_encoder_genre,E3b,A2V,Reggae,Jazz,15,4.098360655737705,0
+audio_encoder_genre,E3b,A2V,Reggae,Pop music,15,4.098360655737705,1
+audio_encoder_genre,E3b,A2V,Reggae,Rock music,5,1.366120218579235,0
+audio_encoder_genre,E3b,A2V,Rock music,Blues,181,49.31880108991825,0
+audio_encoder_genre,E3b,A2V,Rock music,Classical music,3,0.8174386920980926,0
+audio_encoder_genre,E3b,A2V,Rock music,Country,54,14.713896457765667,0
+audio_encoder_genre,E3b,A2V,Rock music,Electronic music,28,7.629427792915531,0
+audio_encoder_genre,E3b,A2V,Rock music,Funk,9,2.4523160762942777,0
+audio_encoder_genre,E3b,A2V,Rock music,Hip hop music,9,2.4523160762942777,0
+audio_encoder_genre,E3b,A2V,Rock music,Jazz,14,3.8147138964577656,0
+audio_encoder_genre,E3b,A2V,Rock music,Pop music,40,10.899182561307901,0
+audio_encoder_genre,E3b,A2V,Rock music,Reggae,29,7.901907356948229,0

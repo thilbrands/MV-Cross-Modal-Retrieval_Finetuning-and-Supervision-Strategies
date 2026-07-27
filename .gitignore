@@ -1,11 +1,14 @@
 old/
 .DS_Store
 __pycache__/
-hyperparameters.txt
+*.pyc
+configs/hyperparameters.txt
 cookies.txt
 latex/
 expose_deutsch/
 tuning_results/
 .claude/
-helper_scripts/combine*.py
-helper_scripts/export*.py
+.mplconfig/
+ba_artifacts/
+# Large regenerable data — keep canonical CSVs/checkpoints under results/ & datasets/ tracked
+# (embeddings/downloads stay only on the cluster under $WORK_ROOT)

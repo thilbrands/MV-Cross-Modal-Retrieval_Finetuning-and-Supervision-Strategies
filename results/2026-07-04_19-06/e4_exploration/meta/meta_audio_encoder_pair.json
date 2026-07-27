@@ -1,0 +1,29 @@
+{
+  "timestamp": "2026-07-05T12:52:47.044208",
+  "dataset_run": "2026-05-26_15-59-27_audioset",
+  "git_commit": "a11fafe",
+  "training_type": "audio_encoder_pair",
+  "train_genres": [
+    "Blues",
+    "Electronic music",
+    "Funk",
+    "Jazz",
+    "Pop music",
+    "Reggae",
+    "Rock music"
+  ],
+  "hyperparams": {
+    "max_epochs": 20,
+    "patience": 3,
+    "lr": 0.0001,
+    "lr_encoder": 1e-05,
+    "batch_size": 128,
+    "contrastive_negatives_per_step": 127,
+    "temp": 0.1,
+    "out_dim": 512,
+    "head_type": "linear",
+    "hidden_dim": 32,
+    "seed": 42
+  },
+  "metrics_csv": "/work2/ra39oxet-DatasetAudioSetSubset/training_runs/e4_exploration/results_audio_encoder_pair.csv"
+}

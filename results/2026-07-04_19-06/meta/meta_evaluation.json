@@ -1,0 +1,13 @@
+{
+  "timestamp": "2026-07-06T11:11:27.589184",
+  "git_commit_eval": "a632f0e",
+  "dataset_run": "2026-05-26_15-59-27_audioset",
+  "n_test": 3668,
+  "pair_head_path": "/work2/ra39oxet-DatasetAudioSetSubset/training_runs/2026-07-04_19-06",
+  "genre_head_path": "/work2/ra39oxet-DatasetAudioSetSubset/training_runs/2026-07-04_19-06",
+  "audio_encoder_pair_path": "/work2/ra39oxet-DatasetAudioSetSubset/training_runs/2026-07-04_19-06",
+  "audio_encoder_genre_path": "/work2/ra39oxet-DatasetAudioSetSubset/training_runs/2026-07-04_19-06",
+  "pair_train_commit": "a11fafe",
+  "genre_train_commit": "a11fafe",
+  "results_csv": "/work2/ra39oxet-DatasetAudioSetSubset/training_runs/2026-07-04_19-06/results_evaluation.csv"
+}

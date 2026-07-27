@@ -1,0 +1,21 @@
+Kuratierte BA-Ergebnisse (Abgabe/Repo).
+
+Cluster-Layout:
+  training_runs/<run>/     # Live-Pipeline (flach: .pt, csv, plots, logs)
+  results/<run>/           # kuratiert
+    checkpoints/
+    results/               # Evaluations-CSVs
+    outputs/               # Trainings-/Analyse-CSVs
+    meta/
+    e4_exploration/        # optional, gleiches Unterlayout
+    e4_interpolation/
+
+Repo-Kopie:
+  datasets/2026-05-26_15-59-27_audioset/train_val_test_split.csv
+  results/2026-07-04_19-06/
+    {checkpoints,results,outputs,meta}/
+    e4_exploration/{checkpoints,results,outputs,meta}/
+    e4_interpolation/{checkpoints,results,outputs,meta}/
+
+Nach train_and_eval: config.package_run_to_results(TRAINING_RUN_DIR)
+  (+ E4 → results/<run>/e4_exploration|e4_interpolation/)

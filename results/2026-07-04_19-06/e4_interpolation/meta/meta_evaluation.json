@@ -1,0 +1,13 @@
+{
+  "timestamp": "2026-07-05T13:24:07.434473",
+  "git_commit_eval": "a11fafe",
+  "dataset_run": "2026-05-26_15-59-27_audioset",
+  "n_test": 3668,
+  "pair_head_path": "/work2/ra39oxet-DatasetAudioSetSubset/training_runs/e4_interpolation",
+  "genre_head_path": "/work2/ra39oxet-DatasetAudioSetSubset/training_runs/e4_interpolation",
+  "audio_encoder_pair_path": "/work2/ra39oxet-DatasetAudioSetSubset/training_runs/e4_interpolation",
+  "audio_encoder_genre_path": "/work2/ra39oxet-DatasetAudioSetSubset/training_runs/e4_interpolation",
+  "pair_train_commit": "a11fafe",
+  "genre_train_commit": "a11fafe",
+  "results_csv": "/work2/ra39oxet-DatasetAudioSetSubset/training_runs/e4_interpolation/results_evaluation.csv"
+}
