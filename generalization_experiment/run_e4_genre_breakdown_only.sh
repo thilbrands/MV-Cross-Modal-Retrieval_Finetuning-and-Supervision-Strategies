@@ -19,6 +19,9 @@ else
   REPO_ROOT="$_SCRIPT_DIR"
 fi
 cd "$REPO_ROOT" || { echo "FEHLER: cd nach $REPO_ROOT fehlgeschlagen." >&2; exit 1; }
+# shellcheck disable=SC1091
+source "$REPO_ROOT/configs/cluster_env.sh"
+mkdir -p "$REPO_ROOT/logs"
 
 WORK_ROOT=$(python3 -c "import sys; sys.path.insert(0,'configs'); import config; print(config.WORK_ROOT)")
 mkdir -p "$WORK_ROOT/logs"
@@ -54,7 +57,7 @@ _run_eval() {
   echo "TRAIN_GENRES:     $TRAIN_GENRES"
 
   JOB=$(sbatch --parsable \
-    --export=DATASET_RUN_NAME,TRAINING_RUN_DIR,TRAIN_GENRES,AE_PAIR_RUN_DIR,AE_GENRE_RUN_DIR \
+    --export=WORK_ROOT,VENV_ACTIVATE,DATASET_RUN_NAME,TRAINING_RUN_DIR,TRAIN_GENRES,AE_PAIR_RUN_DIR,AE_GENRE_RUN_DIR \
     --output="$TRAINING_RUN_DIR/genre_breakdown.out" \
     --error="$TRAINING_RUN_DIR/genre_breakdown.err" \
     generalization_experiment/jobs/eval_genre_breakdown.sh)

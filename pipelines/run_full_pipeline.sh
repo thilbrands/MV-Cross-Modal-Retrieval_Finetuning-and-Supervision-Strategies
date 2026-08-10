@@ -14,9 +14,9 @@
 #SBATCH --partition=paula
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=2GB
-#SBATCH --time=0-96:00:00
-#SBATCH --output=/work2/ra39oxet-DatasetAudioSetSubset/logs/full_pipeline_%j.out
-#SBATCH --error=/work2/ra39oxet-DatasetAudioSetSubset/logs/full_pipeline_%j.err
+#SBATCH --time=2-00:00:00
+#SBATCH --output=logs/%x_%j.out
+#SBATCH --error=logs/%x_%j.err
 
 set -euo pipefail
 _SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -29,7 +29,19 @@ else
   REPO_ROOT="$_SCRIPT_DIR"
 fi
 cd "$REPO_ROOT" || { echo "FEHLER: cd nach $REPO_ROOT fehlgeschlagen." >&2; exit 1; }
-mkdir -p /work2/ra39oxet-DatasetAudioSetSubset/logs
+# shellcheck disable=SC1091
+source "$REPO_ROOT/configs/cluster_env.sh"
+mkdir -p "$REPO_ROOT/logs"
+bash "$REPO_ROOT/configs/check_setup.sh"
+
+if command -v module >/dev/null 2>&1; then
+  module purge >/dev/null 2>&1 || true
+  module load Python/3.11.5-GCCcore-13.2.0 >/dev/null 2>&1 || true
+fi
+if [[ -f "$VENV_ACTIVATE" ]]; then
+  # shellcheck disable=SC1091
+  source "$VENV_ACTIVATE"
+fi
 
 echo "############################################"
 echo "# 1/2 Dataset-Pipeline"

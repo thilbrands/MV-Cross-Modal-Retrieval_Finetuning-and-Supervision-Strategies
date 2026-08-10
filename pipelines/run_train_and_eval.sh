@@ -20,9 +20,9 @@
 #SBATCH --partition=paula
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=2GB
-#SBATCH --time=0-72:00:00
-#SBATCH --output=/work2/ra39oxet-DatasetAudioSetSubset/logs/train_eval_orch_%j.out
-#SBATCH --error=/work2/ra39oxet-DatasetAudioSetSubset/logs/train_eval_orch_%j.err
+#SBATCH --time=2-00:00:00
+#SBATCH --output=logs/%x_%j.out
+#SBATCH --error=logs/%x_%j.err
 
 set -euo pipefail
 _SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -35,7 +35,21 @@ else
   REPO_ROOT="$_SCRIPT_DIR"
 fi
 cd "$REPO_ROOT" || { echo "FEHLER: cd nach $REPO_ROOT fehlgeschlagen." >&2; exit 1; }
-mkdir -p /work2/ra39oxet-DatasetAudioSetSubset/logs
+# shellcheck disable=SC1091
+source "$REPO_ROOT/configs/cluster_env.sh"
+mkdir -p "$REPO_ROOT/logs"
+bash "$REPO_ROOT/configs/check_setup.sh"
+
+# Orchestrator ruft python3 -c config… auf Login-/CPU-Knoten auf;
+# Modul laden, falls verfügbar (Jobs laden es selbst).
+if command -v module >/dev/null 2>&1; then
+  module purge >/dev/null 2>&1 || true
+  module load Python/3.11.5-GCCcore-13.2.0 >/dev/null 2>&1 || true
+fi
+if [[ -f "$VENV_ACTIVATE" ]]; then
+  # shellcheck disable=SC1091
+  source "$VENV_ACTIVATE"
+fi
 
 wait_job() {
   local jid="$1"
@@ -73,56 +87,56 @@ echo "RUN_E4:           $RUN_E4"
 echo ""
 
 echo "========== 1/9 Pair-Training (E1) =========="
-JOB=$(sbatch --parsable --export=DATASET_RUN_NAME,TRAINING_RUN_DIR \
+JOB=$(sbatch --parsable --export=WORK_ROOT,VENV_ACTIVATE,DATASET_RUN_NAME,TRAINING_RUN_DIR \
   --output="$TRAINING_RUN_DIR/training_pair.out" --error="$TRAINING_RUN_DIR/training_pair.err" \
   training/jobs/pair_based_training.sh)
 echo "Job: $JOB"; wait_job "$JOB"
 
 echo ""
 echo "========== 2/9 Genre-Training (E2) =========="
-JOB=$(sbatch --parsable --export=DATASET_RUN_NAME,TRAINING_RUN_DIR \
+JOB=$(sbatch --parsable --export=WORK_ROOT,VENV_ACTIVATE,DATASET_RUN_NAME,TRAINING_RUN_DIR \
   --output="$TRAINING_RUN_DIR/training_genre.out" --error="$TRAINING_RUN_DIR/training_genre.err" \
   training/jobs/genre_based_training.sh)
 echo "Job: $JOB"; wait_job "$JOB"
 
 echo ""
 echo "========== 3/9 Audio-Encoder Pair (E3a) =========="
-JOB=$(sbatch --parsable --export=DATASET_RUN_NAME,TRAINING_RUN_DIR \
+JOB=$(sbatch --parsable --export=WORK_ROOT,VENV_ACTIVATE,DATASET_RUN_NAME,TRAINING_RUN_DIR \
   --output="$TRAINING_RUN_DIR/ae_pair_training.out" --error="$TRAINING_RUN_DIR/ae_pair_training.err" \
   training/jobs/audio_encoder_pair_training.sh)
 echo "Job: $JOB"; wait_job "$JOB"
 
 echo ""
 echo "========== 4/9 Audio-Encoder Genre (E3b) =========="
-JOB=$(sbatch --parsable --export=DATASET_RUN_NAME,TRAINING_RUN_DIR \
+JOB=$(sbatch --parsable --export=WORK_ROOT,VENV_ACTIVATE,DATASET_RUN_NAME,TRAINING_RUN_DIR \
   --output="$TRAINING_RUN_DIR/ae_genre_training.out" --error="$TRAINING_RUN_DIR/ae_genre_training.err" \
   training/jobs/audio_encoder_genre_training.sh)
 echo "Job: $JOB"; wait_job "$JOB"
 
 echo ""
 echo "========== 5/9 Evaluation (A/B + Bootstrap) =========="
-JOB=$(sbatch --parsable --export=DATASET_RUN_NAME,TRAINING_RUN_DIR,AE_PAIR_RUN_DIR,AE_GENRE_RUN_DIR,EVAL_OUTPUT_DIR \
+JOB=$(sbatch --parsable --export=WORK_ROOT,VENV_ACTIVATE,DATASET_RUN_NAME,TRAINING_RUN_DIR,AE_PAIR_RUN_DIR,AE_GENRE_RUN_DIR,EVAL_OUTPUT_DIR \
   --output="$TRAINING_RUN_DIR/evaluation.out" --error="$TRAINING_RUN_DIR/evaluation.err" \
   eval/jobs/evaluation.sh)
 echo "Job: $JOB"; wait_job "$JOB"
 
 echo ""
 echo "========== 6/9 Quality-Split Eval =========="
-JOB=$(sbatch --parsable --export=DATASET_RUN_NAME,TRAINING_RUN_DIR,AE_PAIR_RUN_DIR,AE_GENRE_RUN_DIR \
+JOB=$(sbatch --parsable --export=WORK_ROOT,VENV_ACTIVATE,DATASET_RUN_NAME,TRAINING_RUN_DIR,AE_PAIR_RUN_DIR,AE_GENRE_RUN_DIR \
   --output="$TRAINING_RUN_DIR/eval_quality_split.out" --error="$TRAINING_RUN_DIR/eval_quality_split.err" \
   eval/jobs/eval_quality_split.sh)
 echo "Job: $JOB"; wait_job "$JOB"
 
 echo ""
 echo "========== 7/9 Comparison-Eval (related work) =========="
-JOB=$(sbatch --parsable --export=DATASET_RUN_NAME,TRAINING_RUN_DIR,AE_PAIR_RUN_DIR,AE_GENRE_RUN_DIR \
+JOB=$(sbatch --parsable --export=WORK_ROOT,VENV_ACTIVATE,DATASET_RUN_NAME,TRAINING_RUN_DIR,AE_PAIR_RUN_DIR,AE_GENRE_RUN_DIR \
   --output="$TRAINING_RUN_DIR/comparison_eval.out" --error="$TRAINING_RUN_DIR/comparison_eval.err" \
   eval/jobs/comparison_eval.sh)
 echo "Job: $JOB"; wait_job "$JOB"
 
 echo ""
 echo "========== 8/9 Genre-Centroid-Margin =========="
-JOB=$(sbatch --parsable --export=DATASET_RUN_NAME,TRAINING_RUN_DIR,AE_PAIR_RUN_DIR,AE_GENRE_RUN_DIR,PLOT_OUTPUT_DIR \
+JOB=$(sbatch --parsable --export=WORK_ROOT,VENV_ACTIVATE,DATASET_RUN_NAME,TRAINING_RUN_DIR,AE_PAIR_RUN_DIR,AE_GENRE_RUN_DIR,PLOT_OUTPUT_DIR \
   --output="$TRAINING_RUN_DIR/genre_centroid_margin.out" --error="$TRAINING_RUN_DIR/genre_centroid_margin.err" \
   eval/jobs/genre_centroid_margin.sh)
 echo "Job: $JOB"; wait_job "$JOB"
@@ -132,32 +146,32 @@ echo "========== 9/9 Plots + Thesis-Figuren → TRAINING_RUN_DIR =========="
 # Alle Figuren + Eval-Artefakte landen in TRAINING_RUN_DIR (PLOT_OUTPUT_DIR).
 export PLOT_OUTPUT_DIR="$TRAINING_RUN_DIR"
 
-JOB=$(sbatch --parsable --export=TRAINING_RUN_DIR,PLOT_OUTPUT_DIR \
+JOB=$(sbatch --parsable --export=WORK_ROOT,VENV_ACTIVATE,TRAINING_RUN_DIR,PLOT_OUTPUT_DIR \
   --output="$TRAINING_RUN_DIR/plot_training_curves.out" --error="$TRAINING_RUN_DIR/plot_training_curves.err" \
   figures/jobs/plot_training_curves.sh)
 echo "Job Curves: $JOB"; wait_job "$JOB"
 
-JOB=$(sbatch --parsable --export=DATASET_RUN_NAME,TRAINING_RUN_DIR,AE_PAIR_RUN_DIR,AE_GENRE_RUN_DIR,PLOT_OUTPUT_DIR \
+JOB=$(sbatch --parsable --export=WORK_ROOT,VENV_ACTIVATE,DATASET_RUN_NAME,TRAINING_RUN_DIR,AE_PAIR_RUN_DIR,AE_GENRE_RUN_DIR,PLOT_OUTPUT_DIR \
   --output="$TRAINING_RUN_DIR/tsne_embeddings.out" --error="$TRAINING_RUN_DIR/tsne_embeddings.err" \
   figures/jobs/tsne_embeddings.sh)
 echo "Job t-SNE Embeddings: $JOB"; wait_job "$JOB"
 
-JOB=$(sbatch --parsable --export=DATASET_RUN_NAME,TRAINING_RUN_DIR,AE_PAIR_RUN_DIR,AE_GENRE_RUN_DIR,PLOT_OUTPUT_DIR \
+JOB=$(sbatch --parsable --export=WORK_ROOT,VENV_ACTIVATE,DATASET_RUN_NAME,TRAINING_RUN_DIR,AE_PAIR_RUN_DIR,AE_GENRE_RUN_DIR,PLOT_OUTPUT_DIR \
   --output="$TRAINING_RUN_DIR/tsne_baseline.out" --error="$TRAINING_RUN_DIR/tsne_baseline.err" \
   figures/jobs/tsne_baseline.sh)
 echo "Job t-SNE Baseline: $JOB"; wait_job "$JOB"
 
-JOB=$(sbatch --parsable --export=DATASET_RUN_NAME,TRAINING_RUN_DIR,AE_PAIR_RUN_DIR,AE_GENRE_RUN_DIR,PLOT_OUTPUT_DIR \
+JOB=$(sbatch --parsable --export=WORK_ROOT,VENV_ACTIVATE,DATASET_RUN_NAME,TRAINING_RUN_DIR,AE_PAIR_RUN_DIR,AE_GENRE_RUN_DIR,PLOT_OUTPUT_DIR \
   --output="$TRAINING_RUN_DIR/similarity_histograms_e1e2.out" --error="$TRAINING_RUN_DIR/similarity_histograms_e1e2.err" \
   figures/jobs/similarity_histograms_e1e2.sh)
 echo "Job Hist E1/E2: $JOB"; wait_job "$JOB"
 
-JOB=$(sbatch --parsable --export=DATASET_RUN_NAME,TRAINING_RUN_DIR,AE_PAIR_RUN_DIR,AE_GENRE_RUN_DIR,PLOT_OUTPUT_DIR \
+JOB=$(sbatch --parsable --export=WORK_ROOT,VENV_ACTIVATE,DATASET_RUN_NAME,TRAINING_RUN_DIR,AE_PAIR_RUN_DIR,AE_GENRE_RUN_DIR,PLOT_OUTPUT_DIR \
   --output="$TRAINING_RUN_DIR/similarity_histograms.out" --error="$TRAINING_RUN_DIR/similarity_histograms.err" \
   figures/jobs/similarity_histograms.sh)
 echo "Job Hist E3: $JOB"; wait_job "$JOB"
 
-JOB=$(sbatch --parsable --export=DATASET_RUN_NAME,PLOT_OUTPUT_DIR \
+JOB=$(sbatch --parsable --export=WORK_ROOT,VENV_ACTIVATE,DATASET_RUN_NAME,PLOT_OUTPUT_DIR \
   --output="$TRAINING_RUN_DIR/genre_similarity.out" --error="$TRAINING_RUN_DIR/genre_similarity.err" \
   figures/jobs/genre_similarity.sh)
 echo "Job Genre-Similarity: $JOB"; wait_job "$JOB"
@@ -172,19 +186,19 @@ for name in remove_examples keep_low_examples keep_high_examples; do
   fi
 done
 if [[ ! -d "$TRAINING_RUN_DIR/remove_examples" ]]; then
-  JOB=$(sbatch --parsable --export=DATASET_RUN_NAME,PLOT_OUTPUT_DIR,TRAINING_RUN_DIR \
+  JOB=$(sbatch --parsable --export=WORK_ROOT,VENV_ACTIVATE,DATASET_RUN_NAME,PLOT_OUTPUT_DIR,TRAINING_RUN_DIR \
     --output="$TRAINING_RUN_DIR/export_remove.out" --error="$TRAINING_RUN_DIR/export_remove.err" \
     figures/jobs/export_remove_examples.sh)
   echo "Job REMOVE-Exports: $JOB"; wait_job "$JOB"
 fi
 if [[ ! -d "$TRAINING_RUN_DIR/keep_low_examples" ]]; then
-  JOB=$(sbatch --parsable --export=DATASET_RUN_NAME,PLOT_OUTPUT_DIR,TRAINING_RUN_DIR \
+  JOB=$(sbatch --parsable --export=WORK_ROOT,VENV_ACTIVATE,DATASET_RUN_NAME,PLOT_OUTPUT_DIR,TRAINING_RUN_DIR \
     --output="$TRAINING_RUN_DIR/export_keep_low.out" --error="$TRAINING_RUN_DIR/export_keep_low.err" \
     figures/jobs/export_keep_low_examples.sh)
   echo "Job KEEP_LOW-Exports: $JOB"; wait_job "$JOB"
 fi
 if [[ ! -d "$TRAINING_RUN_DIR/keep_high_examples" ]]; then
-  JOB=$(sbatch --parsable --export=DATASET_RUN_NAME,PLOT_OUTPUT_DIR,TRAINING_RUN_DIR \
+  JOB=$(sbatch --parsable --export=WORK_ROOT,VENV_ACTIVATE,DATASET_RUN_NAME,PLOT_OUTPUT_DIR,TRAINING_RUN_DIR \
     --output="$TRAINING_RUN_DIR/export_keep_high.out" --error="$TRAINING_RUN_DIR/export_keep_high.err" \
     figures/jobs/export_keep_high_examples.sh)
   echo "Job KEEP_HIGH-Exports: $JOB"; wait_job "$JOB"

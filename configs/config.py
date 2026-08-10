@@ -1,21 +1,27 @@
 """
-Zentrale Pfad-Config für die Cluster-Pipeline (work2).
+Zentrale Pfad-Config für die Cluster-Pipeline.
 
-Alle festen Pfade stehen hier; run-spezifische Dinge (z. B. welcher Dataset-Run)
-werden per Umgebungsvariable oder Default „neuester Run“ gesteuert.
-
-WORK_ROOT: Default = Cluster-Pfad; überschreibbar per Env, z. B.
-  WORK_ROOT=~/ba_work  oder  WORK_ROOT=/pfad/zu/work
+WORK_ROOT einmal setzen in configs/cluster_env.sh (oder per Env exportieren).
+Job-Scripts sourcen cluster_env.sh und exportieren WORK_ROOT bevor Python startet.
 """
+from __future__ import annotations
+
 import os
 import subprocess
 from pathlib import Path
 from typing import Optional
 
 
-WORK_ROOT = Path(
-    os.environ.get("WORK_ROOT", "/work2/ra39oxet-DatasetAudioSetSubset")
-).expanduser()
+def _resolve_work_root() -> Path:
+    env = os.environ.get("WORK_ROOT", "").strip()
+    if env:
+        return Path(env).expanduser()
+    # Fallback = Default in configs/cluster_env.sh (Author-Cluster).
+    # Fremde Accounts: WORK_ROOT dort ändern oder exportieren.
+    return Path("/work2/ra39oxet-DatasetAudioSetSubset")
+
+
+WORK_ROOT = _resolve_work_root()
 
 # Alle Dataset-Runs liegen darunter (pro Run ein Ordner: Datum_Uhrzeit_audioset)
 DATASETS_ROOT = WORK_ROOT / "datasets"

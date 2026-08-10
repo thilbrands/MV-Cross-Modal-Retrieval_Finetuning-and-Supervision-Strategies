@@ -15,11 +15,9 @@
 #SBATCH --mem=24GB
 #SBATCH --time=0-4:00:00
 
-#SBATCH --output=/work2/ra39oxet-DatasetAudioSetSubset/logs/evaluation_%j.out
-#SBATCH --error=/work2/ra39oxet-DatasetAudioSetSubset/logs/evaluation_%j.err
+#SBATCH --output=logs/%x_%j.out
+#SBATCH --error=logs/%x_%j.err
 
-WORK_ROOT="/work2/ra39oxet-DatasetAudioSetSubset"
-mkdir -p "$WORK_ROOT/logs"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # Jobs liegen unter <domain>/jobs/ → Repo-Root ist ../..
@@ -28,15 +26,18 @@ if [[ -n "${SLURM_SUBMIT_DIR:-}" && -d "${SLURM_SUBMIT_DIR}/configs" ]]; then
   REPO_ROOT="$SLURM_SUBMIT_DIR"
 fi
 cd "$REPO_ROOT" || { echo "FEHLER: cd nach $REPO_ROOT fehlgeschlagen." >&2; exit 1; }
+# shellcheck disable=SC1091
+source "$REPO_ROOT/configs/cluster_env.sh"
+mkdir -p "$REPO_ROOT/logs"
 
 module purge
 module load Python/3.11.5-GCCcore-13.2.0
 
-if [[ ! -f "$HOME/venv/ba/bin/activate" ]]; then
-  echo "FEHLER: Venv nicht gefunden ($HOME/venv/ba)." >&2
+if [[ ! -f "$VENV_ACTIVATE" ]]; then
+  echo "FEHLER: Venv nicht gefunden ($VENV_ACTIVATE)." >&2
   exit 1
 fi
-source "$HOME/venv/ba/bin/activate"
+source "$VENV_ACTIVATE"
 
 echo "Hostname: $(hostname)"
 echo "Slurm Job ID: $SLURM_JOB_ID"
