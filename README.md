@@ -63,17 +63,19 @@ python3 -m venv ~/venv/ba
 source ~/venv/ba/bin/activate
 pip install -r requirements.txt
 
-# AudioSet metadata (needed to build the dataset)
-# put these two files into $WORK_ROOT/AudioSetData/:
-#   unbalanced_train_segments-2.csv
-#   ontology.json
+# AudioSet metadata → $WORK_ROOT/AudioSetData/  (not shipped in this repo)
+# Download from Google AudioSet:
+#   https://research.google.com/audioset/download.html
+#   CSV:      https://storage.googleapis.com/us_audioset/youtube_corpus/v1/csv/unbalanced_train_segments.csv
+#   Ontology: https://github.com/audioset/ontology/blob/master/ontology.json
+# Place as: unbalanced_train_segments.csv  and  ontology.json
 
 bash configs/check_setup.sh
 ```
 
-### 3. Build dataset (download + embed) — optional if you already have embeddings
+### 3. Build dataset (download + embed)
 
-YouTube download needs `cookies.txt` in the repo root (gitignored / not shipped).
+YouTube download needs a Netscape-format `cookies.txt` in the **repo root**. Place cookies.txt in the repository root (next to README.md).
 
 ```bash
 bash pipelines/run_dataset_pipeline.sh
@@ -91,8 +93,6 @@ Full stack (dataset then train+eval):
 ```bash
 bash pipelines/run_full_pipeline.sh
 ```
-
-Useful flags: `RUN_E4=0`, `SKIP_EXPORTS=1`, `DATASET_RUN_NAME=...`.
 
 ### 5. Where outputs go
 
@@ -117,8 +117,6 @@ pipelines/                   # run_dataset / run_train_and_eval / run_full
 results/                     # curated thesis run (in git)
 training/                    # E1–E3
 ```
-
-Not versioned (`.gitignore`): `old/`, `.DS_Store`, `__pycache__/`, `*.pyc`, `logs/`.
 
 ## Experiments
 
@@ -145,4 +143,4 @@ sbatch --export=WORK_ROOT,VENV_ACTIVATE,DATASET_RUN_NAME=2026-05-26_15-59-27_aud
   dataset is not guaranteed.
 - Method, metric definitions, and figures are documented in the thesis, not here.
 
-Author: Theo Hilbrands, Universität Leipzig (Wirtschaftsinformatik / ScaDS.AI).
+Author: Theo Hilbrands, Universität Leipzig

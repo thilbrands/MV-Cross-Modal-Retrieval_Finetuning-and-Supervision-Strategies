@@ -34,8 +34,13 @@ RESULTS_ROOT = WORK_ROOT / "results"
 
 # Eingabedaten für den Downloader (AudioSet CSV + Ontology)
 DATA_DIR = WORK_ROOT / "AudioSetData"
-DATA_CSV = DATA_DIR / "unbalanced_train_segments-2.csv"
-ONTOLOGY_JSON = DATA_DIR / "ontology.json"
+# Offizielle AudioSet-Dateinamen; override via Env möglich.
+DATA_CSV = Path(os.environ["DATA_CSV"]).expanduser() if os.environ.get("DATA_CSV") else (
+    DATA_DIR / "unbalanced_train_segments.csv"
+)
+ONTOLOGY_JSON = Path(os.environ["ONTOLOGY_JSON"]).expanduser() if os.environ.get("ONTOLOGY_JSON") else (
+    DATA_DIR / "ontology.json"
+)
 
 # Device für PyTorch (CLIP, Wav2CLIP): hier zentral festgelegt, überall importierbar.
 # Bevorzugung: "cuda" wenn verfügbar, sonst "cpu". Bei fehlendem torch: "cpu".

@@ -434,10 +434,16 @@ def main() -> None:
     log(f"GIT_COMMIT: {git_commit}")
 
     if not DATA_CSV.exists():
-        log("FEHLER: DATA_CSV fehlt. COPY_TO_WORK2.md ausführen?")
+        log(
+            "FEHLER: DATA_CSV fehlt. Erwartet: AudioSetData/unbalanced_train_segments.csv "
+            "(https://research.google.com/audioset/download.html)"
+        )
         sys.exit(1)
     if not ONTOLOGY_JSON.exists():
-        log("FEHLER: ONTOLOGY_JSON fehlt. COPY_TO_WORK2.md ausführen?")
+        log(
+            "FEHLER: ONTOLOGY_JSON fehlt. Erwartet: AudioSetData/ontology.json "
+            "(https://github.com/audioset/ontology)"
+        )
         sys.exit(1)
 
     log("")

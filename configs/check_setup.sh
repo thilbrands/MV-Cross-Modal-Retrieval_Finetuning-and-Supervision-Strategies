@@ -37,14 +37,17 @@ else
   echo "OK   venv found"
 fi
 
-DATA_CSV="$WORK_ROOT/AudioSetData/unbalanced_train_segments-2.csv"
+DATA_CSV="$WORK_ROOT/AudioSetData/unbalanced_train_segments.csv"
 ONTOLOGY="$WORK_ROOT/AudioSetData/ontology.json"
 if [[ -f "$DATA_CSV" && -f "$ONTOLOGY" ]]; then
   echo "OK   AudioSet metadata present"
+  echo "     CSV: $DATA_CSV"
+  echo "     Ontology: $ONTOLOGY"
 else
   echo "WARN AudioSet metadata missing (needed for download/dataset pipeline):"
   echo "       $DATA_CSV"
   echo "       $ONTOLOGY"
+  echo "       Download: https://research.google.com/audioset/download.html"
   warn=1
 fi
 
